@@ -192,20 +192,25 @@ export class MPSidebarView extends ItemView {
 		return { file, content };
 	}
 
+	private buildCoverOptions(content: string, basename: string): import('./types').CoverOptions {
+		const renderer = new MarkdownRenderer(this.selectedTheme, false);
+		return {
+			title: renderer.extractTitle(content) || basename,
+			subtitle: renderer.extractDescription(content) || undefined,
+			author: renderer.extractAuthor(content) || this.plugin.settings.defaultAuthor || undefined,
+			style: this.coverStyle,
+			palette: this.coverPalette,
+		};
+	}
+
 	private async previewCover() {
 		const result = await this.getContent();
 		if (!result) return;
 
-		const renderer = new MarkdownRenderer(this.selectedTheme, false);
-		const title = renderer.extractTitle(result.content) || result.file.basename;
-
+		const options = this.buildCoverOptions(result.content, result.file.basename);
 		const generator = new CoverGenerator();
 		try {
-			await generator.generate({
-				title,
-				style: this.coverStyle,
-				palette: this.coverPalette,
-			});
+			await generator.generate(options);
 
 			this.coverPreviewEl.empty();
 			const canvas = generator.getCanvas();
@@ -224,16 +229,10 @@ export class MPSidebarView extends ItemView {
 		const result = await this.getContent();
 		if (!result) return;
 
-		const renderer = new MarkdownRenderer(this.selectedTheme, false);
-		const title = renderer.extractTitle(result.content) || result.file.basename;
-
+		const options = this.buildCoverOptions(result.content, result.file.basename);
 		const generator = new CoverGenerator();
 		try {
-			const blob = await generator.generate({
-				title,
-				style: this.coverStyle,
-				palette: this.coverPalette,
-			});
+			const blob = await generator.generate(options);
 
 			const buffer = await blob.arrayBuffer();
 			const coverName = result.file.basename + '-cover.png';
@@ -340,11 +339,9 @@ export class MPSidebarView extends ItemView {
 
 			this.setStatus('正在生成封面图...');
 			const generator = new CoverGenerator();
-			const coverBlob = await generator.generate({
-				title,
-				style: this.coverStyle,
-				palette: this.coverPalette,
-			});
+			const coverBlob = await generator.generate(
+				this.buildCoverOptions(result.content, result.file.basename)
+			);
 			const coverData = await coverBlob.arrayBuffer();
 
 			this.setStatus('正在上传封面...');

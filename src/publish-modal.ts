@@ -303,9 +303,13 @@ export class PublishModal extends Modal {
 			coverData = await this.app.vault.readBinary(this.localCoverFile);
 			coverFilename = this.localCoverFile.name;
 		} else {
+			const renderer = new MarkdownRenderer(this.selectedTheme, false);
 			const generator = new CoverGenerator();
 			const blob = await generator.generate({
 				title: this.articleTitle,
+				subtitle: this.articleDigest || undefined,
+				author: this.articleAuthor || undefined,
+				tags: this.extractTags(),
 				style: this.coverStyle,
 				palette: this.coverPalette,
 			});
@@ -314,6 +318,17 @@ export class PublishModal extends Modal {
 		}
 
 		return await client.uploadMaterial(coverData, coverFilename);
+	}
+
+	private extractTags(): string[] {
+		const fm = this.markdown.match(/^---\s*\n([\s\S]*?)\n---/);
+		if (fm) {
+			const tagsMatch = fm[1].match(/^tags:\s*\[([^\]]*)\]/m);
+			if (tagsMatch) return tagsMatch[1].split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+			const tagsList = fm[1].match(/^tags:\s*\n((?:\s*-\s*.+\n?)*)/m);
+			if (tagsList) return tagsList[1].split('\n').map(s => s.replace(/^\s*-\s*/, '').trim()).filter(Boolean);
+		}
+		return [];
 	}
 
 	private async uploadContentImages(html: string, client: WeChatClient): Promise<string> {

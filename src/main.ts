@@ -149,10 +149,7 @@ export default class MPPublisherPlugin extends Plugin {
 
 	private async generateCover(file: TFile) {
 		const content = await this.app.vault.read(file);
-		const renderer = new MarkdownRenderer(this.settings.defaultTheme, false);
-		const title = renderer.extractTitle(content) || file.basename;
-
-		new CoverModal(this.app, this.settings, file, title).open();
+		new CoverModal(this.app, this.settings, file, content).open();
 	}
 
 	private async previewArticle(file: TFile) {

@@ -1,93 +1,89 @@
-import { CoverOptions, CoverPalette, CoverStyle, PaletteColors } from './types';
+import { CoverOptions, CoverPalette, CoverStyle, CardPaletteColors } from './types';
 
-const PALETTES: Record<CoverPalette, PaletteColors> = {
+const SERIF = '"Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", Georgia, "Times New Roman", serif';
+const SANS = '"Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif';
+
+const PALETTES: Record<CoverPalette, CardPaletteColors> = {
+	classic: {
+		paper: '#f5f3ed',
+		paperDeep: '#ebe7dc',
+		ink: '#111111',
+		muted: '#575757',
+		accent: '#111111',
+		tint: 'rgba(0,0,0,0.035)',
+		line: 'rgba(17,17,17,0.18)',
+	},
 	warm: {
-		primary: '#FF6B35',
-		secondary: '#F7931E',
-		accent: '#FFD23F',
-		background: '#1A1A2E',
-		text: '#FFFFFF',
-		gradientStops: ['#FF6B35', '#F7931E', '#FFD23F'],
+		paper: '#f3efe6',
+		paperDeep: '#e6dece',
+		ink: '#111111',
+		muted: '#5f5a52',
+		accent: '#b45f2d',
+		tint: 'rgba(180,95,45,0.05)',
+		line: 'rgba(17,17,17,0.18)',
 	},
 	cool: {
-		primary: '#4ECDC4',
-		secondary: '#556270',
-		accent: '#88D8B0',
-		background: '#1B2838',
-		text: '#FFFFFF',
-		gradientStops: ['#667eea', '#764ba2'],
+		paper: '#edf2f7',
+		paperDeep: '#dbe4ef',
+		ink: '#1a202c',
+		muted: '#4a5568',
+		accent: '#2b6cb0',
+		tint: 'rgba(43,108,176,0.06)',
+		line: 'rgba(26,32,44,0.15)',
 	},
 	dark: {
-		primary: '#E94560',
-		secondary: '#533483',
-		accent: '#0F3460',
-		background: '#16213E',
-		text: '#FFFFFF',
-		gradientStops: ['#16213E', '#0F3460', '#533483'],
-	},
-	elegant: {
-		primary: '#C9A96E',
-		secondary: '#826F66',
-		accent: '#E8D5B7',
-		background: '#2C3639',
-		text: '#E8D5B7',
-		gradientStops: ['#2C3639', '#3F4E4F', '#A27B5C'],
-	},
-	vivid: {
-		primary: '#FF006E',
-		secondary: '#8338EC',
-		accent: '#3A86FF',
-		background: '#0A0A23',
-		text: '#FFFFFF',
-		gradientStops: ['#FF006E', '#8338EC', '#3A86FF'],
-	},
-	mono: {
-		primary: '#333333',
-		secondary: '#888888',
-		accent: '#CCCCCC',
-		background: '#F5F5F5',
-		text: '#1A1A1A',
-		gradientStops: ['#E0E0E0', '#F5F5F5', '#FFFFFF'],
+		paper: '#1a1a2e',
+		paperDeep: '#16213e',
+		ink: '#e8e8e8',
+		muted: '#a0a0b0',
+		accent: '#e94560',
+		tint: 'rgba(233,69,96,0.08)',
+		line: 'rgba(255,255,255,0.12)',
 	},
 	nature: {
-		primary: '#2D6A4F',
-		secondary: '#40916C',
-		accent: '#95D5B2',
-		background: '#1B4332',
-		text: '#D8F3DC',
-		gradientStops: ['#1B4332', '#2D6A4F', '#52B788'],
+		paper: '#f0f5ef',
+		paperDeep: '#dde8db',
+		ink: '#1b4332',
+		muted: '#52796f',
+		accent: '#2d6a4f',
+		tint: 'rgba(45,106,79,0.06)',
+		line: 'rgba(27,67,50,0.15)',
 	},
-	sunset: {
-		primary: '#F72585',
-		secondary: '#B5179E',
-		accent: '#7209B7',
-		background: '#3A0CA3',
-		text: '#FFFFFF',
-		gradientStops: ['#F72585', '#B5179E', '#7209B7', '#560BAD', '#3A0CA3'],
+	vivid: {
+		paper: '#fef5f5',
+		paperDeep: '#fde8e8',
+		ink: '#1a1a1a',
+		muted: '#666666',
+		accent: '#c53030',
+		tint: 'rgba(197,48,48,0.05)',
+		line: 'rgba(26,26,26,0.12)',
 	},
 };
 
-const FONT_FAMILY = '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Source Han Sans SC", "Helvetica Neue", Arial, sans-serif';
-
-function seededRandom(seed: number): () => number {
-	let s = seed;
-	return () => {
-		s = (s * 16807 + 0) % 2147483647;
-		return (s - 1) / 2147483646;
-	};
+function escXml(s: string): string {
+	return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function hashString(str: string): number {
-	let hash = 0;
-	for (let i = 0; i < str.length; i++) {
-		const char = str.charCodeAt(i);
-		hash = ((hash << 5) - hash) + char;
-		hash |= 0;
-	}
-	return Math.abs(hash);
+function truncate(s: string, max: number): string {
+	if (s.length <= max) return s;
+	return s.slice(0, max - 1) + '…';
+}
+
+function today(): string {
+	const d = new Date();
+	return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function titleFontSize(title: string, w: number): number {
+	const base = Math.round(w * 0.045);
+	if (title.length > 30) return Math.round(base * 0.72);
+	if (title.length > 20) return Math.round(base * 0.82);
+	if (title.length > 12) return Math.round(base * 0.92);
+	return base;
 }
 
 export class CoverGenerator {
+	private lastHtml = '';
 	private canvas: HTMLCanvasElement;
 	private ctx: CanvasRenderingContext2D;
 
@@ -99,415 +95,208 @@ export class CoverGenerator {
 	}
 
 	async generate(options: CoverOptions): Promise<Blob> {
-		const width = options.width || 1880;
-		const height = options.height || 800;
+		const w = options.width || 1880;
+		const h = options.height || 800;
+		const html = this.generateHtml(options, w, h);
+		this.lastHtml = html;
+		return this.htmlToImage(html, w, h);
+	}
 
-		this.canvas.width = width;
-		this.canvas.height = height;
-
-		const palette = PALETTES[options.palette];
-		const rand = seededRandom(hashString(options.title));
-
-		this.ctx.clearRect(0, 0, width, height);
+	generateHtml(options: CoverOptions, w?: number, h?: number): string {
+		const width = w || options.width || 1880;
+		const height = h || options.height || 800;
+		const p = PALETTES[options.palette];
 
 		switch (options.style) {
-			case 'gradient':
-				this.drawGradient(width, height, palette, rand);
-				break;
-			case 'geometric':
-				this.drawGeometric(width, height, palette, rand);
-				break;
+			case 'editorial':
+				return this.buildEditorial(options, p, width, height);
+			case 'magazine':
+				return this.buildMagazine(options, p, width, height);
 			case 'minimal':
-				this.drawMinimal(width, height, palette, rand);
-				break;
-			case 'wave':
-				this.drawWave(width, height, palette, rand);
-				break;
-			case 'dots':
-				this.drawDots(width, height, palette, rand);
-				break;
-			case 'blocks':
-				this.drawBlocks(width, height, palette, rand);
-				break;
+				return this.buildMinimal(options, p, width, height);
+			case 'panel':
+				return this.buildPanel(options, p, width, height);
 		}
+	}
 
-		this.drawTitle(width, height, options.title, options.subtitle, palette, options.style);
-
-		return new Promise((resolve, reject) => {
-			this.canvas.toBlob(
-				(blob) => {
-					if (blob) resolve(blob);
-					else reject(new Error('Failed to generate cover image'));
-				},
-				'image/png'
-			);
-		});
+	getHtml(): string {
+		return this.lastHtml;
 	}
 
 	getCanvas(): HTMLCanvasElement {
 		return this.canvas;
 	}
 
-	private drawGradient(w: number, h: number, p: PaletteColors, rand: () => number) {
-		const angle = rand() * Math.PI * 0.5;
-		const x1 = Math.cos(angle) * w;
-		const y1 = Math.sin(angle) * h;
-		const gradient = this.ctx.createLinearGradient(0, 0, x1, y1);
-		const stops = p.gradientStops;
-		stops.forEach((color, i) => {
-			gradient.addColorStop(i / (stops.length - 1), color);
-		});
-		this.ctx.fillStyle = gradient;
-		this.ctx.fillRect(0, 0, w, h);
-
-		for (let i = 0; i < 20; i++) {
-			const x = rand() * w;
-			const y = rand() * h;
-			const r = 20 + rand() * 180;
-			const alpha = 0.03 + rand() * 0.12;
-			this.ctx.beginPath();
-			this.ctx.arc(x, y, r, 0, Math.PI * 2);
-			this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-			this.ctx.fill();
-		}
-
-		for (let i = 0; i < 8; i++) {
-			const x = rand() * w;
-			const y = rand() * h;
-			const r = 40 + rand() * 120;
-			const alpha = 0.05 + rand() * 0.1;
-			const radGrad = this.ctx.createRadialGradient(x, y, 0, x, y, r);
-			radGrad.addColorStop(0, this.hexToRgba(p.primary, alpha));
-			radGrad.addColorStop(1, this.hexToRgba(p.primary, 0));
-			this.ctx.fillStyle = radGrad;
-			this.ctx.fillRect(x - r, y - r, r * 2, r * 2);
-		}
+	createPreviewElement(html: string, containerWidth: number): HTMLDivElement {
+		const div = document.createElement('div');
+		div.style.cssText = 'overflow:hidden; border-radius:8px; box-shadow:0 2px 12px rgba(0,0,0,0.1);';
+		const inner = document.createElement('div');
+		const scale = containerWidth / 1880;
+		inner.style.cssText = `transform:scale(${scale}); transform-origin:top left; width:1880px; height:800px;`;
+		inner.innerHTML = html;
+		div.style.width = containerWidth + 'px';
+		div.style.height = Math.round(800 * scale) + 'px';
+		div.appendChild(inner);
+		return div;
 	}
 
-	private drawGeometric(w: number, h: number, p: PaletteColors, rand: () => number) {
-		this.ctx.fillStyle = p.background;
-		this.ctx.fillRect(0, 0, w, h);
+	private buildEditorial(o: CoverOptions, p: CardPaletteColors, w: number, h: number): string {
+		const fs = titleFontSize(o.title, w);
+		const meta = o.author ? escXml(o.author) + ' · ' + today() : today();
+		const subtitle = o.subtitle ? escXml(truncate(o.subtitle, 100)) : '';
+		const tags = (o.tags || []).slice(0, 4);
 
-		const colors = [p.primary, p.secondary, p.accent];
-
-		for (let i = 0; i < 25; i++) {
-			const shape = Math.floor(rand() * 3);
-			const x = rand() * w;
-			const y = rand() * h;
-			const size = 40 + rand() * 200;
-			const alpha = 0.1 + rand() * 0.3;
-			const color = colors[Math.floor(rand() * colors.length)];
-
-			this.ctx.save();
-			this.ctx.translate(x, y);
-			this.ctx.rotate(rand() * Math.PI * 2);
-			this.ctx.fillStyle = this.hexToRgba(color, alpha);
-
-			if (shape === 0) {
-				this.ctx.fillRect(-size / 2, -size / 2, size, size);
-			} else if (shape === 1) {
-				this.ctx.beginPath();
-				this.ctx.moveTo(0, -size / 2);
-				this.ctx.lineTo(size / 2, size / 2);
-				this.ctx.lineTo(-size / 2, size / 2);
-				this.ctx.closePath();
-				this.ctx.fill();
-			} else {
-				this.ctx.beginPath();
-				this.ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
-				this.ctx.fill();
-			}
-
-			this.ctx.restore();
-		}
-
-		this.ctx.strokeStyle = this.hexToRgba(p.accent, 0.15);
-		this.ctx.lineWidth = 1;
-		const gridSize = 60;
-		for (let x = 0; x < w; x += gridSize) {
-			this.ctx.beginPath();
-			this.ctx.moveTo(x, 0);
-			this.ctx.lineTo(x, h);
-			this.ctx.stroke();
-		}
-		for (let y = 0; y < h; y += gridSize) {
-			this.ctx.beginPath();
-			this.ctx.moveTo(0, y);
-			this.ctx.lineTo(w, y);
-			this.ctx.stroke();
-		}
+		return `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;background:${p.paper};font-family:${SANS};display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">` +
+			`<div style="width:${Math.round(w * 0.82)}px;max-height:${Math.round(h * 0.85)}px;padding:${Math.round(h * 0.06)}px ${Math.round(w * 0.04)}px;">` +
+			`<div style="font-size:${Math.round(w * 0.007)}px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${p.muted};margin-bottom:${Math.round(h * 0.02)}px;">${escXml(meta)}</div>` +
+			`<div style="font-family:${SERIF};font-size:${fs}px;font-weight:900;line-height:1.1;letter-spacing:-0.03em;color:${p.ink};margin-bottom:${Math.round(h * 0.025)}px;">${escXml(o.title)}</div>` +
+			`<div style="width:${Math.round(w * 0.06)}px;height:${Math.round(h * 0.008)}px;background:${p.accent};margin-bottom:${Math.round(h * 0.03)}px;"></div>` +
+			(subtitle ? `<div style="font-size:${Math.round(w * 0.012)}px;line-height:1.55;color:${p.ink};max-width:${Math.round(w * 0.6)}px;margin-bottom:${Math.round(h * 0.03)}px;">${subtitle}</div>` : '') +
+			(tags.length > 0 ? `<div style="display:flex;gap:${Math.round(w * 0.006)}px;flex-wrap:wrap;">` + tags.map(t =>
+				`<span style="padding:${Math.round(h * 0.01)}px ${Math.round(w * 0.008)}px;border:1px solid ${p.line};font-size:${Math.round(w * 0.006)}px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${p.muted};">${escXml(t)}</span>`
+			).join('') + `</div>` : '') +
+			`</div>` +
+			`</div>`;
 	}
 
-	private drawMinimal(w: number, h: number, p: PaletteColors, rand: () => number) {
-		this.ctx.fillStyle = p.background;
-		this.ctx.fillRect(0, 0, w, h);
+	private buildMagazine(o: CoverOptions, p: CardPaletteColors, w: number, h: number): string {
+		const fs = titleFontSize(o.title, w);
+		const meta = o.author ? escXml(o.author) : 'ARTICLE';
+		const subtitle = o.subtitle ? escXml(truncate(o.subtitle, 120)) : '';
+		const tags = (o.tags || []).slice(0, 5);
 
-		const lineY = h * 0.65;
-		this.ctx.strokeStyle = p.primary;
-		this.ctx.lineWidth = 4;
-		this.ctx.beginPath();
-		this.ctx.moveTo(w * 0.15, lineY);
-		this.ctx.lineTo(w * 0.85, lineY);
-		this.ctx.stroke();
+		const leftW = Math.round(w * 0.58);
+		const rightW = Math.round(w * 0.32);
+		const pad = Math.round(w * 0.035);
+		const gap = Math.round(w * 0.025);
 
-		const dotR = 6;
-		this.ctx.fillStyle = p.primary;
-		this.ctx.beginPath();
-		this.ctx.arc(w * 0.15, lineY, dotR, 0, Math.PI * 2);
-		this.ctx.fill();
-		this.ctx.beginPath();
-		this.ctx.arc(w * 0.85, lineY, dotR, 0, Math.PI * 2);
-		this.ctx.fill();
-
-		const cornerSize = 60;
-		this.ctx.strokeStyle = this.hexToRgba(p.accent, 0.3);
-		this.ctx.lineWidth = 2;
-
-		this.ctx.beginPath();
-		this.ctx.moveTo(40, 40 + cornerSize);
-		this.ctx.lineTo(40, 40);
-		this.ctx.lineTo(40 + cornerSize, 40);
-		this.ctx.stroke();
-
-		this.ctx.beginPath();
-		this.ctx.moveTo(w - 40 - cornerSize, 40);
-		this.ctx.lineTo(w - 40, 40);
-		this.ctx.lineTo(w - 40, 40 + cornerSize);
-		this.ctx.stroke();
-
-		this.ctx.beginPath();
-		this.ctx.moveTo(40, h - 40 - cornerSize);
-		this.ctx.lineTo(40, h - 40);
-		this.ctx.lineTo(40 + cornerSize, h - 40);
-		this.ctx.stroke();
-
-		this.ctx.beginPath();
-		this.ctx.moveTo(w - 40 - cornerSize, h - 40);
-		this.ctx.lineTo(w - 40, h - 40);
-		this.ctx.lineTo(w - 40, h - 40 - cornerSize);
-		this.ctx.stroke();
+		return `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;background:${p.paper};font-family:${SANS};display:flex;overflow:hidden;position:relative;">` +
+			// Left column
+			`<div style="width:${leftW}px;padding:${pad}px ${gap}px ${pad}px ${pad}px;display:flex;flex-direction:column;justify-content:space-between;">` +
+			`<div>` +
+			`<div style="display:flex;align-items:center;gap:${Math.round(w * 0.008)}px;margin-bottom:${Math.round(h * 0.03)}px;">` +
+			`<div style="width:${Math.round(w * 0.045)}px;height:${Math.round(h * 0.008)}px;background:${p.ink};"></div>` +
+			`<span style="font-size:${Math.round(w * 0.007)}px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${p.muted};">${meta}</span>` +
+			`</div>` +
+			`<div style="font-family:${SERIF};font-size:${fs}px;font-weight:900;line-height:1.05;letter-spacing:-0.04em;color:${p.ink};">${escXml(o.title)}</div>` +
+			(subtitle ? `<div style="font-size:${Math.round(w * 0.012)}px;line-height:1.5;color:${p.ink};margin-top:${Math.round(h * 0.025)}px;max-width:${Math.round(leftW * 0.9)}px;">${subtitle}</div>` : '') +
+			`</div>` +
+			(tags.length > 0 ? `<div style="display:flex;gap:${Math.round(w * 0.005)}px;flex-wrap:wrap;">` + tags.map(t =>
+				`<span style="padding:${Math.round(h * 0.01)}px ${Math.round(w * 0.007)}px;border:1px solid ${p.line};font-size:${Math.round(w * 0.006)}px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${p.muted};">${escXml(t)}</span>`
+			).join('') + `</div>` : `<div style="font-size:${Math.round(w * 0.007)}px;color:${p.muted};">${today()}</div>`) +
+			`</div>` +
+			// Right column
+			`<div style="width:${rightW}px;padding:${Math.round(pad * 0.8)}px;border-left:${Math.round(h * 0.008)}px solid ${p.ink};background:linear-gradient(180deg,rgba(255,255,255,0.3),${p.tint});display:flex;flex-direction:column;justify-content:space-between;">` +
+			`<div>` +
+			`<div style="font-size:${Math.round(w * 0.007)}px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${p.accent};margin-bottom:${Math.round(h * 0.015)}px;">OVERVIEW</div>` +
+			`<div style="font-size:${Math.round(w * 0.018)}px;font-weight:800;line-height:1.1;letter-spacing:-0.03em;color:${p.ink};margin-bottom:${Math.round(h * 0.02)}px;">${escXml(truncate(o.title, 20))}</div>` +
+			(subtitle ? `<div style="font-size:${Math.round(w * 0.0095)}px;line-height:1.5;color:${p.ink};">${escXml(truncate(o.subtitle || '', 80))}</div>` : '') +
+			`</div>` +
+			`<div>` +
+			`<div style="padding-top:${Math.round(h * 0.015)}px;border-top:1px solid ${p.line};margin-bottom:${Math.round(h * 0.015)}px;">` +
+			`<div style="font-size:${Math.round(w * 0.006)}px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:${p.muted};margin-bottom:${Math.round(h * 0.005)}px;">DATE</div>` +
+			`<div style="font-size:${Math.round(w * 0.0095)}px;font-weight:700;color:${p.ink};">${today()}</div>` +
+			`</div>` +
+			(o.author ? `<div style="padding-top:${Math.round(h * 0.015)}px;border-top:1px solid ${p.line};">` +
+				`<div style="font-size:${Math.round(w * 0.006)}px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:${p.muted};margin-bottom:${Math.round(h * 0.005)}px;">AUTHOR</div>` +
+				`<div style="font-size:${Math.round(w * 0.0095)}px;font-weight:700;color:${p.ink};">${escXml(o.author)}</div>` +
+				`</div>` : '') +
+			`</div>` +
+			`</div>` +
+			`</div>`;
 	}
 
-	private drawWave(w: number, h: number, p: PaletteColors, rand: () => number) {
-		const gradient = this.ctx.createLinearGradient(0, 0, 0, h);
-		gradient.addColorStop(0, p.background);
-		gradient.addColorStop(1, this.adjustBrightness(p.background, 30));
-		this.ctx.fillStyle = gradient;
-		this.ctx.fillRect(0, 0, w, h);
+	private buildMinimal(o: CoverOptions, p: CardPaletteColors, w: number, h: number): string {
+		let fs = Math.round(w * 0.055);
+		if (o.title.length > 20) fs = Math.round(w * 0.042);
+		if (o.title.length > 30) fs = Math.round(w * 0.035);
 
-		const colors = [p.primary, p.secondary, p.accent];
-		const waveCount = 4;
+		const meta = o.author || '';
 
-		for (let wave = 0; wave < waveCount; wave++) {
-			const baseY = h * 0.4 + wave * (h * 0.15);
-			const amplitude = 30 + rand() * 50;
-			const frequency = 0.003 + rand() * 0.004;
-			const phase = rand() * Math.PI * 2;
-			const alpha = 0.15 + (waveCount - wave) * 0.08;
-
-			this.ctx.beginPath();
-			this.ctx.moveTo(0, h);
-
-			for (let x = 0; x <= w; x += 4) {
-				const y = baseY + Math.sin(x * frequency + phase) * amplitude
-					+ Math.sin(x * frequency * 2.3 + phase * 1.5) * (amplitude * 0.3);
-				if (x === 0) {
-					this.ctx.lineTo(0, y);
-				} else {
-					this.ctx.lineTo(x, y);
-				}
-			}
-
-			this.ctx.lineTo(w, h);
-			this.ctx.closePath();
-			this.ctx.fillStyle = this.hexToRgba(colors[wave % colors.length], alpha);
-			this.ctx.fill();
-		}
+		return `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;background:${p.paper};font-family:${SANS};display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;">` +
+			`<div style="text-align:center;max-width:${Math.round(w * 0.75)}px;">` +
+			(meta ? `<div style="font-size:${Math.round(w * 0.007)}px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:${p.muted};margin-bottom:${Math.round(h * 0.04)}px;">${escXml(meta)}</div>` : '') +
+			`<div style="font-family:${SERIF};font-size:${fs}px;font-weight:900;line-height:1.05;letter-spacing:-0.04em;color:${p.ink};">${escXml(o.title)}</div>` +
+			`<div style="width:${Math.round(w * 0.06)}px;height:${Math.round(h * 0.008)}px;background:${p.accent};margin:${Math.round(h * 0.04)}px auto;"></div>` +
+			(o.subtitle ? `<div style="font-size:${Math.round(w * 0.011)}px;line-height:1.5;color:${p.muted};max-width:${Math.round(w * 0.5)}px;margin:0 auto;">${escXml(truncate(o.subtitle, 60))}</div>` : '') +
+			`</div>` +
+			`</div>`;
 	}
 
-	private drawDots(w: number, h: number, p: PaletteColors, rand: () => number) {
-		this.ctx.fillStyle = p.background;
-		this.ctx.fillRect(0, 0, w, h);
+	private buildPanel(o: CoverOptions, p: CardPaletteColors, w: number, h: number): string {
+		const fs = titleFontSize(o.title, w);
+		const subtitle = o.subtitle ? escXml(truncate(o.subtitle, 100)) : '';
+		const tags = (o.tags || []).slice(0, 3);
+		const accentW = Math.round(w * 0.008);
+		const pad = Math.round(w * 0.035);
 
-		const spacing = 50;
-		const maxR = 12;
-		const cx = w / 2;
-		const cy = h / 2;
-		const maxDist = Math.sqrt(cx * cx + cy * cy);
+		return `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;background:${p.paper};font-family:${SANS};display:flex;overflow:hidden;position:relative;">` +
+			// Accent bar
+			`<div style="width:${accentW}px;background:${p.accent};flex-shrink:0;"></div>` +
+			// Main content
+			`<div style="flex:1;padding:${pad}px;display:flex;flex-direction:column;justify-content:center;">` +
+			`<div style="font-size:${Math.round(w * 0.007)}px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${p.accent};margin-bottom:${Math.round(h * 0.02)}px;">${escXml(o.author || today())}</div>` +
+			`<div style="font-family:${SERIF};font-size:${fs}px;font-weight:900;line-height:1.1;letter-spacing:-0.03em;color:${p.ink};margin-bottom:${Math.round(h * 0.025)}px;">${escXml(o.title)}</div>` +
+			(subtitle ? `<div style="font-size:${Math.round(w * 0.012)}px;line-height:1.55;color:${p.muted};max-width:${Math.round(w * 0.5)}px;">${subtitle}</div>` : '') +
+			`</div>` +
+			// Right panel
+			`<div style="width:${Math.round(w * 0.22)}px;background:${p.tint};padding:${pad}px ${Math.round(pad * 0.8)}px;display:flex;flex-direction:column;justify-content:flex-end;border-left:1px solid ${p.line};">` +
+			(tags.length > 0 ?
+				tags.map(t =>
+					`<div style="padding:${Math.round(h * 0.015)}px 0;border-bottom:1px solid ${p.line};">` +
+					`<span style="font-size:${Math.round(w * 0.0075)}px;font-weight:700;color:${p.ink};">${escXml(t)}</span>` +
+					`</div>`
+				).join('') :
+				`<div style="font-size:${Math.round(w * 0.007)}px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:${p.muted};">${today()}</div>`
+			) +
+			`</div>` +
+			`</div>`;
+	}
 
-		for (let x = spacing; x < w; x += spacing) {
-			for (let y = spacing; y < h; y += spacing) {
-				const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
-				const normalDist = dist / maxDist;
-				const r = maxR * (0.3 + normalDist * 0.7);
-				const alpha = 0.1 + (1 - normalDist) * 0.3;
+	private async htmlToImage(html: string, w: number, h: number): Promise<Blob> {
+		const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
+			`<foreignObject width="100%" height="100%">${html}</foreignObject>` +
+			`</svg>`;
 
-				this.ctx.beginPath();
-				this.ctx.arc(x, y, r, 0, Math.PI * 2);
-				this.ctx.fillStyle = this.hexToRgba(
-					normalDist > 0.5 ? p.accent : p.primary,
-					alpha
+		const svgBlob = new Blob([svg], { type: 'image/svg+xml;charset=utf-8' });
+		const url = URL.createObjectURL(svgBlob);
+
+		return new Promise((resolve, reject) => {
+			const img = new Image();
+			img.onload = () => {
+				this.canvas.width = w;
+				this.canvas.height = h;
+				this.ctx.drawImage(img, 0, 0, w, h);
+				URL.revokeObjectURL(url);
+
+				this.addNoiseTexture(w, h, 0.025);
+
+				this.canvas.toBlob(
+					(blob) => {
+						if (blob) resolve(blob);
+						else reject(new Error('toBlob failed'));
+					},
+					'image/png'
 				);
-				this.ctx.fill();
-			}
-		}
-
-		const radGrad = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, maxDist * 0.5);
-		radGrad.addColorStop(0, this.hexToRgba(p.background, 0.9));
-		radGrad.addColorStop(0.5, this.hexToRgba(p.background, 0.5));
-		radGrad.addColorStop(1, this.hexToRgba(p.background, 0));
-		this.ctx.fillStyle = radGrad;
-		this.ctx.fillRect(0, 0, w, h);
-	}
-
-	private drawBlocks(w: number, h: number, p: PaletteColors, rand: () => number) {
-		this.ctx.fillStyle = p.background;
-		this.ctx.fillRect(0, 0, w, h);
-
-		const colors = [p.primary, p.secondary, p.accent];
-		const cols = 8;
-		const rows = 4;
-		const blockW = w / cols;
-		const blockH = h / rows;
-
-		for (let col = 0; col < cols; col++) {
-			for (let row = 0; row < rows; row++) {
-				if (rand() > 0.4) continue;
-				const color = colors[Math.floor(rand() * colors.length)];
-				const alpha = 0.15 + rand() * 0.4;
-				this.ctx.fillStyle = this.hexToRgba(color, alpha);
-
-				const bw = blockW * (1 + Math.floor(rand() * 2));
-				const bh = blockH * (1 + Math.floor(rand() * 2));
-
-				const roundness = 8 + rand() * 16;
-				this.roundRect(
-					col * blockW, row * blockH,
-					Math.min(bw, w - col * blockW),
-					Math.min(bh, h - row * blockH),
-					roundness
-				);
-				this.ctx.fill();
-			}
-		}
-
-		const overlay = this.ctx.createLinearGradient(0, 0, w, 0);
-		overlay.addColorStop(0, this.hexToRgba(p.background, 0.3));
-		overlay.addColorStop(0.5, this.hexToRgba(p.background, 0.6));
-		overlay.addColorStop(1, this.hexToRgba(p.background, 0.3));
-		this.ctx.fillStyle = overlay;
-		this.ctx.fillRect(0, 0, w, h);
-	}
-
-	private drawTitle(
-		w: number, h: number,
-		title: string,
-		subtitle: string | undefined,
-		palette: PaletteColors,
-		style: CoverStyle,
-	) {
-		const baseFontSize = Math.round(h * 0.085);
-		let fontSize = baseFontSize;
-		const maxWidth = w * 0.72;
-		const maxLines = 3;
-
-		this.ctx.font = `bold ${fontSize}px ${FONT_FAMILY}`;
-		this.ctx.textAlign = 'center';
-		this.ctx.textBaseline = 'middle';
-
-		let lines = this.wrapText(title, maxWidth);
-		while (lines.length > maxLines && fontSize > Math.round(h * 0.04)) {
-			fontSize -= 2;
-			this.ctx.font = `bold ${fontSize}px ${FONT_FAMILY}`;
-			lines = this.wrapText(title, maxWidth);
-		}
-
-		const lineHeight = fontSize * 1.45;
-		const totalTextHeight = lines.length * lineHeight;
-		const subtitleOffset = subtitle ? fontSize * 0.8 : 0;
-		const startY = (h - totalTextHeight - subtitleOffset) / 2 + fontSize / 2;
-
-		if (style !== 'minimal') {
-			const padding = Math.round(h * 0.045);
-			const bgWidth = maxWidth + padding * 2;
-			const bgHeight = totalTextHeight + subtitleOffset + padding * 2;
-			const bgX = (w - bgWidth) / 2;
-			const bgY = startY - fontSize / 2 - padding;
-
-			this.ctx.fillStyle = this.hexToRgba(palette.background, 0.35);
-			this.roundRect(bgX, bgY, bgWidth, bgHeight, 16);
-			this.ctx.fill();
-		}
-
-		this.ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-		this.ctx.shadowBlur = Math.round(h * 0.03);
-		this.ctx.shadowOffsetX = 0;
-		this.ctx.shadowOffsetY = Math.round(h * 0.005);
-		this.ctx.fillStyle = palette.text;
-
-		lines.forEach((line, i) => {
-			this.ctx.fillText(line, w / 2, startY + i * lineHeight);
+			};
+			img.onerror = () => {
+				URL.revokeObjectURL(url);
+				reject(new Error('SVG image load failed'));
+			};
+			img.src = url;
 		});
+	}
 
-		this.ctx.shadowColor = 'transparent';
-		this.ctx.shadowBlur = 0;
-
-		if (subtitle) {
-			const subFontSize = Math.round(fontSize * 0.38);
-			this.ctx.font = `${subFontSize}px ${FONT_FAMILY}`;
-			this.ctx.fillStyle = this.hexToRgba(palette.text, 0.7);
-			this.ctx.fillText(subtitle, w / 2, startY + totalTextHeight + subFontSize * 0.5);
+	private addNoiseTexture(w: number, h: number, opacity: number) {
+		const imageData = this.ctx.getImageData(0, 0, w, h);
+		const data = imageData.data;
+		const strength = opacity * 255;
+		for (let i = 0; i < data.length; i += 4) {
+			const noise = (Math.random() - 0.5) * strength;
+			data[i] = Math.min(255, Math.max(0, data[i] + noise));
+			data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + noise));
+			data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + noise));
 		}
-	}
-
-	private wrapText(text: string, maxWidth: number): string[] {
-		const lines: string[] = [];
-		let currentLine = '';
-
-		for (const char of text) {
-			const testLine = currentLine + char;
-			const metrics = this.ctx.measureText(testLine);
-
-			if (metrics.width > maxWidth && currentLine.length > 0) {
-				lines.push(currentLine);
-				currentLine = char;
-			} else {
-				currentLine = testLine;
-			}
-		}
-
-		if (currentLine) {
-			lines.push(currentLine);
-		}
-
-		return lines;
-	}
-
-	private hexToRgba(hex: string, alpha: number): string {
-		const r = parseInt(hex.slice(1, 3), 16);
-		const g = parseInt(hex.slice(3, 5), 16);
-		const b = parseInt(hex.slice(5, 7), 16);
-		return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-	}
-
-	private adjustBrightness(hex: string, amount: number): string {
-		const r = Math.min(255, Math.max(0, parseInt(hex.slice(1, 3), 16) + amount));
-		const g = Math.min(255, Math.max(0, parseInt(hex.slice(3, 5), 16) + amount));
-		const b = Math.min(255, Math.max(0, parseInt(hex.slice(5, 7), 16) + amount));
-		return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-	}
-
-	private roundRect(x: number, y: number, w: number, h: number, r: number) {
-		this.ctx.beginPath();
-		this.ctx.moveTo(x + r, y);
-		this.ctx.lineTo(x + w - r, y);
-		this.ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-		this.ctx.lineTo(x + w, y + h - r);
-		this.ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-		this.ctx.lineTo(x + r, y + h);
-		this.ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-		this.ctx.lineTo(x, y + r);
-		this.ctx.quadraticCurveTo(x, y, x + r, y);
-		this.ctx.closePath();
+		this.ctx.putImageData(imageData, 0, 0);
 	}
 }

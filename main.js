@@ -62,22 +62,18 @@ var import_obsidian = require("obsidian");
 
 // src/types.ts
 var COVER_STYLE_LABELS = {
-  gradient: "\u6E10\u53D8\u6D41\u5149",
-  geometric: "\u51E0\u4F55\u56FE\u5F62",
-  minimal: "\u6781\u7B80\u98CE\u683C",
-  wave: "\u6D41\u52A8\u6CE2\u6D6A",
-  dots: "\u5706\u70B9\u56FE\u6848",
-  blocks: "\u8272\u5757\u62FC\u63A5"
+  editorial: "\u793E\u8BBA\u98CE\u683C",
+  magazine: "\u6742\u5FD7\u6392\u7248",
+  minimal: "\u5927\u5B57\u6781\u7B80",
+  panel: "\u9762\u677F\u5E03\u5C40"
 };
 var COVER_PALETTE_LABELS = {
+  classic: "\u7ECF\u5178\u7EB8\u8272",
   warm: "\u6696\u8272\u8C03",
   cool: "\u51B7\u8272\u8C03",
-  dark: "\u6697\u8272\u8C03",
-  elegant: "\u5178\u96C5",
-  vivid: "\u9C9C\u8273",
-  mono: "\u9ED1\u767D",
-  nature: "\u81EA\u7136",
-  sunset: "\u65E5\u843D"
+  dark: "\u6697\u8272\u98CE\u683C",
+  nature: "\u81EA\u7136\u7EFF",
+  vivid: "\u6D3B\u529B\u7EA2"
 };
 var ARTICLE_THEME_LABELS = {
   default: "\u7ECF\u5178",
@@ -93,8 +89,8 @@ var DEFAULT_SETTINGS = {
   activeAccountIndex: -1,
   defaultAuthor: "",
   defaultTheme: "default",
-  defaultCoverStyle: "gradient",
-  defaultCoverPalette: "warm",
+  defaultCoverStyle: "editorial",
+  defaultCoverPalette: "classic",
   convertLinksToFootnotes: true,
   coverSaveLocation: "same",
   coverSubfolder: "covers"
@@ -313,91 +309,89 @@ var MPPublisherSettingTab = class extends import_obsidian.PluginSettingTab {
 var import_obsidian2 = require("obsidian");
 
 // src/cover-generator.ts
+var SERIF = '"Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", Georgia, "Times New Roman", serif';
+var SANS = '"Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif';
 var PALETTES = {
+  classic: {
+    paper: "#f5f3ed",
+    paperDeep: "#ebe7dc",
+    ink: "#111111",
+    muted: "#575757",
+    accent: "#111111",
+    tint: "rgba(0,0,0,0.035)",
+    line: "rgba(17,17,17,0.18)"
+  },
   warm: {
-    primary: "#FF6B35",
-    secondary: "#F7931E",
-    accent: "#FFD23F",
-    background: "#1A1A2E",
-    text: "#FFFFFF",
-    gradientStops: ["#FF6B35", "#F7931E", "#FFD23F"]
+    paper: "#f3efe6",
+    paperDeep: "#e6dece",
+    ink: "#111111",
+    muted: "#5f5a52",
+    accent: "#b45f2d",
+    tint: "rgba(180,95,45,0.05)",
+    line: "rgba(17,17,17,0.18)"
   },
   cool: {
-    primary: "#4ECDC4",
-    secondary: "#556270",
-    accent: "#88D8B0",
-    background: "#1B2838",
-    text: "#FFFFFF",
-    gradientStops: ["#667eea", "#764ba2"]
+    paper: "#edf2f7",
+    paperDeep: "#dbe4ef",
+    ink: "#1a202c",
+    muted: "#4a5568",
+    accent: "#2b6cb0",
+    tint: "rgba(43,108,176,0.06)",
+    line: "rgba(26,32,44,0.15)"
   },
   dark: {
-    primary: "#E94560",
-    secondary: "#533483",
-    accent: "#0F3460",
-    background: "#16213E",
-    text: "#FFFFFF",
-    gradientStops: ["#16213E", "#0F3460", "#533483"]
-  },
-  elegant: {
-    primary: "#C9A96E",
-    secondary: "#826F66",
-    accent: "#E8D5B7",
-    background: "#2C3639",
-    text: "#E8D5B7",
-    gradientStops: ["#2C3639", "#3F4E4F", "#A27B5C"]
-  },
-  vivid: {
-    primary: "#FF006E",
-    secondary: "#8338EC",
-    accent: "#3A86FF",
-    background: "#0A0A23",
-    text: "#FFFFFF",
-    gradientStops: ["#FF006E", "#8338EC", "#3A86FF"]
-  },
-  mono: {
-    primary: "#333333",
-    secondary: "#888888",
-    accent: "#CCCCCC",
-    background: "#F5F5F5",
-    text: "#1A1A1A",
-    gradientStops: ["#E0E0E0", "#F5F5F5", "#FFFFFF"]
+    paper: "#1a1a2e",
+    paperDeep: "#16213e",
+    ink: "#e8e8e8",
+    muted: "#a0a0b0",
+    accent: "#e94560",
+    tint: "rgba(233,69,96,0.08)",
+    line: "rgba(255,255,255,0.12)"
   },
   nature: {
-    primary: "#2D6A4F",
-    secondary: "#40916C",
-    accent: "#95D5B2",
-    background: "#1B4332",
-    text: "#D8F3DC",
-    gradientStops: ["#1B4332", "#2D6A4F", "#52B788"]
+    paper: "#f0f5ef",
+    paperDeep: "#dde8db",
+    ink: "#1b4332",
+    muted: "#52796f",
+    accent: "#2d6a4f",
+    tint: "rgba(45,106,79,0.06)",
+    line: "rgba(27,67,50,0.15)"
   },
-  sunset: {
-    primary: "#F72585",
-    secondary: "#B5179E",
-    accent: "#7209B7",
-    background: "#3A0CA3",
-    text: "#FFFFFF",
-    gradientStops: ["#F72585", "#B5179E", "#7209B7", "#560BAD", "#3A0CA3"]
+  vivid: {
+    paper: "#fef5f5",
+    paperDeep: "#fde8e8",
+    ink: "#1a1a1a",
+    muted: "#666666",
+    accent: "#c53030",
+    tint: "rgba(197,48,48,0.05)",
+    line: "rgba(26,26,26,0.12)"
   }
 };
-var FONT_FAMILY = '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Source Han Sans SC", "Helvetica Neue", Arial, sans-serif';
-function seededRandom(seed) {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return (s - 1) / 2147483646;
-  };
+function escXml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
-function hashString(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0;
-  }
-  return Math.abs(hash);
+function truncate(s, max) {
+  if (s.length <= max)
+    return s;
+  return s.slice(0, max - 1) + "\u2026";
+}
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
+}
+function titleFontSize(title, w) {
+  const base = Math.round(w * 0.045);
+  if (title.length > 30)
+    return Math.round(base * 0.72);
+  if (title.length > 20)
+    return Math.round(base * 0.82);
+  if (title.length > 12)
+    return Math.round(base * 0.92);
+  return base;
 }
 var CoverGenerator = class {
   constructor() {
+    this.lastHtml = "";
     this.canvas = document.createElement("canvas");
     const ctx = this.canvas.getContext("2d");
     if (!ctx)
@@ -405,476 +399,128 @@ var CoverGenerator = class {
     this.ctx = ctx;
   }
   async generate(options2) {
-    const width = options2.width || 1880;
-    const height = options2.height || 800;
-    this.canvas.width = width;
-    this.canvas.height = height;
-    const palette = PALETTES[options2.palette];
-    const rand = seededRandom(hashString(options2.title));
-    this.ctx.clearRect(0, 0, width, height);
+    const w = options2.width || 1880;
+    const h = options2.height || 800;
+    const html = this.generateHtml(options2, w, h);
+    this.lastHtml = html;
+    return this.htmlToImage(html, w, h);
+  }
+  generateHtml(options2, w, h) {
+    const width = w || options2.width || 1880;
+    const height = h || options2.height || 800;
+    const p = PALETTES[options2.palette];
     switch (options2.style) {
-      case "gradient":
-        this.drawGradient(width, height, palette, rand);
-        break;
-      case "geometric":
-        this.drawGeometric(width, height, palette, rand);
-        break;
+      case "editorial":
+        return this.buildEditorial(options2, p, width, height);
+      case "magazine":
+        return this.buildMagazine(options2, p, width, height);
       case "minimal":
-        this.drawMinimal(width, height, palette, rand);
-        break;
-      case "wave":
-        this.drawWave(width, height, palette, rand);
-        break;
-      case "dots":
-        this.drawDots(width, height, palette, rand);
-        break;
-      case "blocks":
-        this.drawBlocks(width, height, palette, rand);
-        break;
+        return this.buildMinimal(options2, p, width, height);
+      case "panel":
+        return this.buildPanel(options2, p, width, height);
     }
-    this.drawTitle(width, height, options2.title, options2.subtitle, palette, options2.style);
-    return new Promise((resolve, reject) => {
-      this.canvas.toBlob(
-        (blob) => {
-          if (blob)
-            resolve(blob);
-          else
-            reject(new Error("Failed to generate cover image"));
-        },
-        "image/png"
-      );
-    });
+  }
+  getHtml() {
+    return this.lastHtml;
   }
   getCanvas() {
     return this.canvas;
   }
-  drawGradient(w, h, p, rand) {
-    const angle = rand() * Math.PI * 0.5;
-    const x1 = Math.cos(angle) * w;
-    const y1 = Math.sin(angle) * h;
-    const gradient = this.ctx.createLinearGradient(0, 0, x1, y1);
-    const stops = p.gradientStops;
-    stops.forEach((color, i) => {
-      gradient.addColorStop(i / (stops.length - 1), color);
-    });
-    this.ctx.fillStyle = gradient;
-    this.ctx.fillRect(0, 0, w, h);
-    for (let i = 0; i < 20; i++) {
-      const x = rand() * w;
-      const y = rand() * h;
-      const r = 20 + rand() * 180;
-      const alpha = 0.03 + rand() * 0.12;
-      this.ctx.beginPath();
-      this.ctx.arc(x, y, r, 0, Math.PI * 2);
-      this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-      this.ctx.fill();
-    }
-    for (let i = 0; i < 8; i++) {
-      const x = rand() * w;
-      const y = rand() * h;
-      const r = 40 + rand() * 120;
-      const alpha = 0.05 + rand() * 0.1;
-      const radGrad = this.ctx.createRadialGradient(x, y, 0, x, y, r);
-      radGrad.addColorStop(0, this.hexToRgba(p.primary, alpha));
-      radGrad.addColorStop(1, this.hexToRgba(p.primary, 0));
-      this.ctx.fillStyle = radGrad;
-      this.ctx.fillRect(x - r, y - r, r * 2, r * 2);
-    }
+  createPreviewElement(html, containerWidth) {
+    const div = document.createElement("div");
+    div.style.cssText = "overflow:hidden; border-radius:8px; box-shadow:0 2px 12px rgba(0,0,0,0.1);";
+    const inner = document.createElement("div");
+    const scale = containerWidth / 1880;
+    inner.style.cssText = `transform:scale(${scale}); transform-origin:top left; width:1880px; height:800px;`;
+    inner.innerHTML = html;
+    div.style.width = containerWidth + "px";
+    div.style.height = Math.round(800 * scale) + "px";
+    div.appendChild(inner);
+    return div;
   }
-  drawGeometric(w, h, p, rand) {
-    this.ctx.fillStyle = p.background;
-    this.ctx.fillRect(0, 0, w, h);
-    const colors = [p.primary, p.secondary, p.accent];
-    for (let i = 0; i < 25; i++) {
-      const shape = Math.floor(rand() * 3);
-      const x = rand() * w;
-      const y = rand() * h;
-      const size = 40 + rand() * 200;
-      const alpha = 0.1 + rand() * 0.3;
-      const color = colors[Math.floor(rand() * colors.length)];
-      this.ctx.save();
-      this.ctx.translate(x, y);
-      this.ctx.rotate(rand() * Math.PI * 2);
-      this.ctx.fillStyle = this.hexToRgba(color, alpha);
-      if (shape === 0) {
-        this.ctx.fillRect(-size / 2, -size / 2, size, size);
-      } else if (shape === 1) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(0, -size / 2);
-        this.ctx.lineTo(size / 2, size / 2);
-        this.ctx.lineTo(-size / 2, size / 2);
-        this.ctx.closePath();
-        this.ctx.fill();
-      } else {
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
-        this.ctx.fill();
-      }
-      this.ctx.restore();
-    }
-    this.ctx.strokeStyle = this.hexToRgba(p.accent, 0.15);
-    this.ctx.lineWidth = 1;
-    const gridSize = 60;
-    for (let x = 0; x < w; x += gridSize) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(x, 0);
-      this.ctx.lineTo(x, h);
-      this.ctx.stroke();
-    }
-    for (let y = 0; y < h; y += gridSize) {
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, y);
-      this.ctx.lineTo(w, y);
-      this.ctx.stroke();
-    }
+  buildEditorial(o, p, w, h) {
+    const fs = titleFontSize(o.title, w);
+    const meta = o.author ? escXml(o.author) + " \xB7 " + today() : today();
+    const subtitle = o.subtitle ? escXml(truncate(o.subtitle, 100)) : "";
+    const tags = (o.tags || []).slice(0, 4);
+    return `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;background:${p.paper};font-family:${SANS};display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;"><div style="width:${Math.round(w * 0.82)}px;max-height:${Math.round(h * 0.85)}px;padding:${Math.round(h * 0.06)}px ${Math.round(w * 0.04)}px;"><div style="font-size:${Math.round(w * 7e-3)}px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${p.muted};margin-bottom:${Math.round(h * 0.02)}px;">${escXml(meta)}</div><div style="font-family:${SERIF};font-size:${fs}px;font-weight:900;line-height:1.1;letter-spacing:-0.03em;color:${p.ink};margin-bottom:${Math.round(h * 0.025)}px;">${escXml(o.title)}</div><div style="width:${Math.round(w * 0.06)}px;height:${Math.round(h * 8e-3)}px;background:${p.accent};margin-bottom:${Math.round(h * 0.03)}px;"></div>` + (subtitle ? `<div style="font-size:${Math.round(w * 0.012)}px;line-height:1.55;color:${p.ink};max-width:${Math.round(w * 0.6)}px;margin-bottom:${Math.round(h * 0.03)}px;">${subtitle}</div>` : "") + (tags.length > 0 ? `<div style="display:flex;gap:${Math.round(w * 6e-3)}px;flex-wrap:wrap;">` + tags.map(
+      (t) => `<span style="padding:${Math.round(h * 0.01)}px ${Math.round(w * 8e-3)}px;border:1px solid ${p.line};font-size:${Math.round(w * 6e-3)}px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${p.muted};">${escXml(t)}</span>`
+    ).join("") + `</div>` : "") + `</div></div>`;
   }
-  drawMinimal(w, h, p, rand) {
-    this.ctx.fillStyle = p.background;
-    this.ctx.fillRect(0, 0, w, h);
-    const lineY = h * 0.65;
-    this.ctx.strokeStyle = p.primary;
-    this.ctx.lineWidth = 4;
-    this.ctx.beginPath();
-    this.ctx.moveTo(w * 0.15, lineY);
-    this.ctx.lineTo(w * 0.85, lineY);
-    this.ctx.stroke();
-    const dotR = 6;
-    this.ctx.fillStyle = p.primary;
-    this.ctx.beginPath();
-    this.ctx.arc(w * 0.15, lineY, dotR, 0, Math.PI * 2);
-    this.ctx.fill();
-    this.ctx.beginPath();
-    this.ctx.arc(w * 0.85, lineY, dotR, 0, Math.PI * 2);
-    this.ctx.fill();
-    const cornerSize = 60;
-    this.ctx.strokeStyle = this.hexToRgba(p.accent, 0.3);
-    this.ctx.lineWidth = 2;
-    this.ctx.beginPath();
-    this.ctx.moveTo(40, 40 + cornerSize);
-    this.ctx.lineTo(40, 40);
-    this.ctx.lineTo(40 + cornerSize, 40);
-    this.ctx.stroke();
-    this.ctx.beginPath();
-    this.ctx.moveTo(w - 40 - cornerSize, 40);
-    this.ctx.lineTo(w - 40, 40);
-    this.ctx.lineTo(w - 40, 40 + cornerSize);
-    this.ctx.stroke();
-    this.ctx.beginPath();
-    this.ctx.moveTo(40, h - 40 - cornerSize);
-    this.ctx.lineTo(40, h - 40);
-    this.ctx.lineTo(40 + cornerSize, h - 40);
-    this.ctx.stroke();
-    this.ctx.beginPath();
-    this.ctx.moveTo(w - 40 - cornerSize, h - 40);
-    this.ctx.lineTo(w - 40, h - 40);
-    this.ctx.lineTo(w - 40, h - 40 - cornerSize);
-    this.ctx.stroke();
+  buildMagazine(o, p, w, h) {
+    const fs = titleFontSize(o.title, w);
+    const meta = o.author ? escXml(o.author) : "ARTICLE";
+    const subtitle = o.subtitle ? escXml(truncate(o.subtitle, 120)) : "";
+    const tags = (o.tags || []).slice(0, 5);
+    const leftW = Math.round(w * 0.58);
+    const rightW = Math.round(w * 0.32);
+    const pad = Math.round(w * 0.035);
+    const gap = Math.round(w * 0.025);
+    return `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;background:${p.paper};font-family:${SANS};display:flex;overflow:hidden;position:relative;"><div style="width:${leftW}px;padding:${pad}px ${gap}px ${pad}px ${pad}px;display:flex;flex-direction:column;justify-content:space-between;"><div><div style="display:flex;align-items:center;gap:${Math.round(w * 8e-3)}px;margin-bottom:${Math.round(h * 0.03)}px;"><div style="width:${Math.round(w * 0.045)}px;height:${Math.round(h * 8e-3)}px;background:${p.ink};"></div><span style="font-size:${Math.round(w * 7e-3)}px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${p.muted};">${meta}</span></div><div style="font-family:${SERIF};font-size:${fs}px;font-weight:900;line-height:1.05;letter-spacing:-0.04em;color:${p.ink};">${escXml(o.title)}</div>` + (subtitle ? `<div style="font-size:${Math.round(w * 0.012)}px;line-height:1.5;color:${p.ink};margin-top:${Math.round(h * 0.025)}px;max-width:${Math.round(leftW * 0.9)}px;">${subtitle}</div>` : "") + `</div>` + (tags.length > 0 ? `<div style="display:flex;gap:${Math.round(w * 5e-3)}px;flex-wrap:wrap;">` + tags.map(
+      (t) => `<span style="padding:${Math.round(h * 0.01)}px ${Math.round(w * 7e-3)}px;border:1px solid ${p.line};font-size:${Math.round(w * 6e-3)}px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${p.muted};">${escXml(t)}</span>`
+    ).join("") + `</div>` : `<div style="font-size:${Math.round(w * 7e-3)}px;color:${p.muted};">${today()}</div>`) + `</div><div style="width:${rightW}px;padding:${Math.round(pad * 0.8)}px;border-left:${Math.round(h * 8e-3)}px solid ${p.ink};background:linear-gradient(180deg,rgba(255,255,255,0.3),${p.tint});display:flex;flex-direction:column;justify-content:space-between;"><div><div style="font-size:${Math.round(w * 7e-3)}px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${p.accent};margin-bottom:${Math.round(h * 0.015)}px;">OVERVIEW</div><div style="font-size:${Math.round(w * 0.018)}px;font-weight:800;line-height:1.1;letter-spacing:-0.03em;color:${p.ink};margin-bottom:${Math.round(h * 0.02)}px;">${escXml(truncate(o.title, 20))}</div>` + (subtitle ? `<div style="font-size:${Math.round(w * 95e-4)}px;line-height:1.5;color:${p.ink};">${escXml(truncate(o.subtitle || "", 80))}</div>` : "") + `</div><div><div style="padding-top:${Math.round(h * 0.015)}px;border-top:1px solid ${p.line};margin-bottom:${Math.round(h * 0.015)}px;"><div style="font-size:${Math.round(w * 6e-3)}px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:${p.muted};margin-bottom:${Math.round(h * 5e-3)}px;">DATE</div><div style="font-size:${Math.round(w * 95e-4)}px;font-weight:700;color:${p.ink};">${today()}</div></div>` + (o.author ? `<div style="padding-top:${Math.round(h * 0.015)}px;border-top:1px solid ${p.line};"><div style="font-size:${Math.round(w * 6e-3)}px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:${p.muted};margin-bottom:${Math.round(h * 5e-3)}px;">AUTHOR</div><div style="font-size:${Math.round(w * 95e-4)}px;font-weight:700;color:${p.ink};">${escXml(o.author)}</div></div>` : "") + `</div></div></div>`;
   }
-  drawWave(w, h, p, rand) {
-    const gradient = this.ctx.createLinearGradient(0, 0, 0, h);
-    gradient.addColorStop(0, p.background);
-    gradient.addColorStop(1, this.adjustBrightness(p.background, 30));
-    this.ctx.fillStyle = gradient;
-    this.ctx.fillRect(0, 0, w, h);
-    const colors = [p.primary, p.secondary, p.accent];
-    const waveCount = 4;
-    for (let wave = 0; wave < waveCount; wave++) {
-      const baseY = h * 0.4 + wave * (h * 0.15);
-      const amplitude = 30 + rand() * 50;
-      const frequency = 3e-3 + rand() * 4e-3;
-      const phase = rand() * Math.PI * 2;
-      const alpha = 0.15 + (waveCount - wave) * 0.08;
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, h);
-      for (let x = 0; x <= w; x += 4) {
-        const y = baseY + Math.sin(x * frequency + phase) * amplitude + Math.sin(x * frequency * 2.3 + phase * 1.5) * (amplitude * 0.3);
-        if (x === 0) {
-          this.ctx.lineTo(0, y);
-        } else {
-          this.ctx.lineTo(x, y);
-        }
-      }
-      this.ctx.lineTo(w, h);
-      this.ctx.closePath();
-      this.ctx.fillStyle = this.hexToRgba(colors[wave % colors.length], alpha);
-      this.ctx.fill();
-    }
+  buildMinimal(o, p, w, h) {
+    let fs = Math.round(w * 0.055);
+    if (o.title.length > 20)
+      fs = Math.round(w * 0.042);
+    if (o.title.length > 30)
+      fs = Math.round(w * 0.035);
+    const meta = o.author || "";
+    return `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;background:${p.paper};font-family:${SANS};display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative;"><div style="text-align:center;max-width:${Math.round(w * 0.75)}px;">` + (meta ? `<div style="font-size:${Math.round(w * 7e-3)}px;font-weight:800;letter-spacing:0.2em;text-transform:uppercase;color:${p.muted};margin-bottom:${Math.round(h * 0.04)}px;">${escXml(meta)}</div>` : "") + `<div style="font-family:${SERIF};font-size:${fs}px;font-weight:900;line-height:1.05;letter-spacing:-0.04em;color:${p.ink};">${escXml(o.title)}</div><div style="width:${Math.round(w * 0.06)}px;height:${Math.round(h * 8e-3)}px;background:${p.accent};margin:${Math.round(h * 0.04)}px auto;"></div>` + (o.subtitle ? `<div style="font-size:${Math.round(w * 0.011)}px;line-height:1.5;color:${p.muted};max-width:${Math.round(w * 0.5)}px;margin:0 auto;">${escXml(truncate(o.subtitle, 60))}</div>` : "") + `</div></div>`;
   }
-  drawDots(w, h, p, rand) {
-    this.ctx.fillStyle = p.background;
-    this.ctx.fillRect(0, 0, w, h);
-    const spacing = 50;
-    const maxR = 12;
-    const cx = w / 2;
-    const cy = h / 2;
-    const maxDist = Math.sqrt(cx * cx + cy * cy);
-    for (let x = spacing; x < w; x += spacing) {
-      for (let y = spacing; y < h; y += spacing) {
-        const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
-        const normalDist = dist / maxDist;
-        const r = maxR * (0.3 + normalDist * 0.7);
-        const alpha = 0.1 + (1 - normalDist) * 0.3;
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, r, 0, Math.PI * 2);
-        this.ctx.fillStyle = this.hexToRgba(
-          normalDist > 0.5 ? p.accent : p.primary,
-          alpha
+  buildPanel(o, p, w, h) {
+    const fs = titleFontSize(o.title, w);
+    const subtitle = o.subtitle ? escXml(truncate(o.subtitle, 100)) : "";
+    const tags = (o.tags || []).slice(0, 3);
+    const accentW = Math.round(w * 8e-3);
+    const pad = Math.round(w * 0.035);
+    return `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${w}px;height:${h}px;background:${p.paper};font-family:${SANS};display:flex;overflow:hidden;position:relative;"><div style="width:${accentW}px;background:${p.accent};flex-shrink:0;"></div><div style="flex:1;padding:${pad}px;display:flex;flex-direction:column;justify-content:center;"><div style="font-size:${Math.round(w * 7e-3)}px;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${p.accent};margin-bottom:${Math.round(h * 0.02)}px;">${escXml(o.author || today())}</div><div style="font-family:${SERIF};font-size:${fs}px;font-weight:900;line-height:1.1;letter-spacing:-0.03em;color:${p.ink};margin-bottom:${Math.round(h * 0.025)}px;">${escXml(o.title)}</div>` + (subtitle ? `<div style="font-size:${Math.round(w * 0.012)}px;line-height:1.55;color:${p.muted};max-width:${Math.round(w * 0.5)}px;">${subtitle}</div>` : "") + `</div><div style="width:${Math.round(w * 0.22)}px;background:${p.tint};padding:${pad}px ${Math.round(pad * 0.8)}px;display:flex;flex-direction:column;justify-content:flex-end;border-left:1px solid ${p.line};">` + (tags.length > 0 ? tags.map(
+      (t) => `<div style="padding:${Math.round(h * 0.015)}px 0;border-bottom:1px solid ${p.line};"><span style="font-size:${Math.round(w * 75e-4)}px;font-weight:700;color:${p.ink};">${escXml(t)}</span></div>`
+    ).join("") : `<div style="font-size:${Math.round(w * 7e-3)}px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:${p.muted};">${today()}</div>`) + `</div></div>`;
+  }
+  async htmlToImage(html, w, h) {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><foreignObject width="100%" height="100%">${html}</foreignObject></svg>`;
+    const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(svgBlob);
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        this.canvas.width = w;
+        this.canvas.height = h;
+        this.ctx.drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        this.addNoiseTexture(w, h, 0.025);
+        this.canvas.toBlob(
+          (blob) => {
+            if (blob)
+              resolve(blob);
+            else
+              reject(new Error("toBlob failed"));
+          },
+          "image/png"
         );
-        this.ctx.fill();
-      }
-    }
-    const radGrad = this.ctx.createRadialGradient(cx, cy, 0, cx, cy, maxDist * 0.5);
-    radGrad.addColorStop(0, this.hexToRgba(p.background, 0.9));
-    radGrad.addColorStop(0.5, this.hexToRgba(p.background, 0.5));
-    radGrad.addColorStop(1, this.hexToRgba(p.background, 0));
-    this.ctx.fillStyle = radGrad;
-    this.ctx.fillRect(0, 0, w, h);
-  }
-  drawBlocks(w, h, p, rand) {
-    this.ctx.fillStyle = p.background;
-    this.ctx.fillRect(0, 0, w, h);
-    const colors = [p.primary, p.secondary, p.accent];
-    const cols = 8;
-    const rows = 4;
-    const blockW = w / cols;
-    const blockH = h / rows;
-    for (let col = 0; col < cols; col++) {
-      for (let row = 0; row < rows; row++) {
-        if (rand() > 0.4)
-          continue;
-        const color = colors[Math.floor(rand() * colors.length)];
-        const alpha = 0.15 + rand() * 0.4;
-        this.ctx.fillStyle = this.hexToRgba(color, alpha);
-        const bw = blockW * (1 + Math.floor(rand() * 2));
-        const bh = blockH * (1 + Math.floor(rand() * 2));
-        const roundness = 8 + rand() * 16;
-        this.roundRect(
-          col * blockW,
-          row * blockH,
-          Math.min(bw, w - col * blockW),
-          Math.min(bh, h - row * blockH),
-          roundness
-        );
-        this.ctx.fill();
-      }
-    }
-    const overlay = this.ctx.createLinearGradient(0, 0, w, 0);
-    overlay.addColorStop(0, this.hexToRgba(p.background, 0.3));
-    overlay.addColorStop(0.5, this.hexToRgba(p.background, 0.6));
-    overlay.addColorStop(1, this.hexToRgba(p.background, 0.3));
-    this.ctx.fillStyle = overlay;
-    this.ctx.fillRect(0, 0, w, h);
-  }
-  drawTitle(w, h, title, subtitle, palette, style) {
-    const baseFontSize = Math.round(h * 0.085);
-    let fontSize = baseFontSize;
-    const maxWidth = w * 0.72;
-    const maxLines = 3;
-    this.ctx.font = `bold ${fontSize}px ${FONT_FAMILY}`;
-    this.ctx.textAlign = "center";
-    this.ctx.textBaseline = "middle";
-    let lines = this.wrapText(title, maxWidth);
-    while (lines.length > maxLines && fontSize > Math.round(h * 0.04)) {
-      fontSize -= 2;
-      this.ctx.font = `bold ${fontSize}px ${FONT_FAMILY}`;
-      lines = this.wrapText(title, maxWidth);
-    }
-    const lineHeight = fontSize * 1.45;
-    const totalTextHeight = lines.length * lineHeight;
-    const subtitleOffset = subtitle ? fontSize * 0.8 : 0;
-    const startY = (h - totalTextHeight - subtitleOffset) / 2 + fontSize / 2;
-    if (style !== "minimal") {
-      const padding = Math.round(h * 0.045);
-      const bgWidth = maxWidth + padding * 2;
-      const bgHeight = totalTextHeight + subtitleOffset + padding * 2;
-      const bgX = (w - bgWidth) / 2;
-      const bgY = startY - fontSize / 2 - padding;
-      this.ctx.fillStyle = this.hexToRgba(palette.background, 0.35);
-      this.roundRect(bgX, bgY, bgWidth, bgHeight, 16);
-      this.ctx.fill();
-    }
-    this.ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
-    this.ctx.shadowBlur = Math.round(h * 0.03);
-    this.ctx.shadowOffsetX = 0;
-    this.ctx.shadowOffsetY = Math.round(h * 5e-3);
-    this.ctx.fillStyle = palette.text;
-    lines.forEach((line, i) => {
-      this.ctx.fillText(line, w / 2, startY + i * lineHeight);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("SVG image load failed"));
+      };
+      img.src = url;
     });
-    this.ctx.shadowColor = "transparent";
-    this.ctx.shadowBlur = 0;
-    if (subtitle) {
-      const subFontSize = Math.round(fontSize * 0.38);
-      this.ctx.font = `${subFontSize}px ${FONT_FAMILY}`;
-      this.ctx.fillStyle = this.hexToRgba(palette.text, 0.7);
-      this.ctx.fillText(subtitle, w / 2, startY + totalTextHeight + subFontSize * 0.5);
+  }
+  addNoiseTexture(w, h, opacity) {
+    const imageData = this.ctx.getImageData(0, 0, w, h);
+    const data = imageData.data;
+    const strength = opacity * 255;
+    for (let i = 0; i < data.length; i += 4) {
+      const noise = (Math.random() - 0.5) * strength;
+      data[i] = Math.min(255, Math.max(0, data[i] + noise));
+      data[i + 1] = Math.min(255, Math.max(0, data[i + 1] + noise));
+      data[i + 2] = Math.min(255, Math.max(0, data[i + 2] + noise));
     }
-  }
-  wrapText(text, maxWidth) {
-    const lines = [];
-    let currentLine = "";
-    for (const char of text) {
-      const testLine = currentLine + char;
-      const metrics = this.ctx.measureText(testLine);
-      if (metrics.width > maxWidth && currentLine.length > 0) {
-        lines.push(currentLine);
-        currentLine = char;
-      } else {
-        currentLine = testLine;
-      }
-    }
-    if (currentLine) {
-      lines.push(currentLine);
-    }
-    return lines;
-  }
-  hexToRgba(hex, alpha) {
-    const r = parseInt(hex.slice(1, 3), 16);
-    const g = parseInt(hex.slice(3, 5), 16);
-    const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-  }
-  adjustBrightness(hex, amount) {
-    const r = Math.min(255, Math.max(0, parseInt(hex.slice(1, 3), 16) + amount));
-    const g = Math.min(255, Math.max(0, parseInt(hex.slice(3, 5), 16) + amount));
-    const b = Math.min(255, Math.max(0, parseInt(hex.slice(5, 7), 16) + amount));
-    return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
-  }
-  roundRect(x, y, w, h, r) {
-    this.ctx.beginPath();
-    this.ctx.moveTo(x + r, y);
-    this.ctx.lineTo(x + w - r, y);
-    this.ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-    this.ctx.lineTo(x + w, y + h - r);
-    this.ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-    this.ctx.lineTo(x + r, y + h);
-    this.ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-    this.ctx.lineTo(x, y + r);
-    this.ctx.quadraticCurveTo(x, y, x + r, y);
-    this.ctx.closePath();
+    this.ctx.putImageData(imageData, 0, 0);
   }
 };
-
-// src/cover-modal.ts
-var CoverModal = class extends import_obsidian2.Modal {
-  constructor(app, settings, file, title) {
-    super(app);
-    this.currentBlob = null;
-    this.settings = settings;
-    this.file = file;
-    this.title = title;
-    this.generator = new CoverGenerator();
-    this.selectedStyle = settings.defaultCoverStyle;
-    this.selectedPalette = settings.defaultCoverPalette;
-    this.customTitle = title;
-  }
-  async onOpen() {
-    const { contentEl } = this;
-    contentEl.empty();
-    contentEl.addClass("mp-cover-modal");
-    contentEl.createEl("h2", { text: "\u751F\u6210\u5C01\u9762\u56FE" });
-    contentEl.createEl("p", {
-      text: "\u4E3A\u6587\u7AE0\u751F\u6210 2.35:1 \u6BD4\u4F8B\u7684\u5C01\u9762\u56FE",
-      cls: "mp-modal-desc"
-    });
-    new import_obsidian2.Setting(contentEl).setName("\u6807\u9898").setDesc("\u663E\u793A\u5728\u5C01\u9762\u4E0A\u7684\u6807\u9898\u6587\u5B57").addText(
-      (text) => text.setValue(this.customTitle).onChange((value) => {
-        this.customTitle = value;
-      })
-    );
-    new import_obsidian2.Setting(contentEl).setName("\u89C6\u89C9\u98CE\u683C").addDropdown(
-      (dropdown) => dropdown.addOptions(COVER_STYLE_LABELS).setValue(this.selectedStyle).onChange((value) => {
-        this.selectedStyle = value;
-      })
-    );
-    new import_obsidian2.Setting(contentEl).setName("\u914D\u8272\u65B9\u6848").addDropdown(
-      (dropdown) => dropdown.addOptions(COVER_PALETTE_LABELS).setValue(this.selectedPalette).onChange((value) => {
-        this.selectedPalette = value;
-      })
-    );
-    const buttonRow = contentEl.createDiv({ cls: "mp-button-row" });
-    const previewBtn = buttonRow.createEl("button", { text: "\u9884\u89C8" });
-    previewBtn.addEventListener("click", () => this.generatePreview());
-    const saveBtn = buttonRow.createEl("button", {
-      text: "\u751F\u6210\u5E76\u4FDD\u5B58",
-      cls: "mod-cta"
-    });
-    saveBtn.addEventListener("click", () => this.generateAndSave());
-    this.previewEl = contentEl.createDiv({ cls: "mp-cover-preview" });
-    this.previewEl.createEl("p", {
-      text: '\u70B9\u51FB"\u9884\u89C8"\u67E5\u770B\u5C01\u9762\u6548\u679C',
-      cls: "mp-preview-placeholder"
-    });
-    await this.generatePreview();
-  }
-  onClose() {
-    this.contentEl.empty();
-  }
-  async generatePreview() {
-    const options2 = {
-      title: this.customTitle || "\u672A\u547D\u540D\u6587\u7AE0",
-      style: this.selectedStyle,
-      palette: this.selectedPalette
-    };
-    try {
-      this.currentBlob = await this.generator.generate(options2);
-      this.previewEl.empty();
-      const canvas = this.generator.getCanvas();
-      const previewCanvas = this.previewEl.createEl("canvas");
-      previewCanvas.width = canvas.width;
-      previewCanvas.height = canvas.height;
-      previewCanvas.addClass("mp-cover-canvas");
-      const ctx = previewCanvas.getContext("2d");
-      if (ctx) {
-        ctx.drawImage(canvas, 0, 0);
-      }
-      const info = this.previewEl.createDiv({ cls: "mp-cover-info" });
-      info.createEl("span", { text: `${canvas.width} \xD7 ${canvas.height} (2.35:1)` });
-    } catch (e) {
-      this.previewEl.empty();
-      this.previewEl.createEl("p", {
-        text: `\u751F\u6210\u5931\u8D25: ${e instanceof Error ? e.message : String(e)}`,
-        cls: "mp-error"
-      });
-    }
-  }
-  async generateAndSave() {
-    var _a;
-    if (!this.currentBlob) {
-      await this.generatePreview();
-    }
-    if (!this.currentBlob) {
-      new import_obsidian2.Notice("\u5C01\u9762\u56FE\u751F\u6210\u5931\u8D25");
-      return;
-    }
-    try {
-      const buffer = await this.currentBlob.arrayBuffer();
-      const coverName = this.file.basename + "-cover.png";
-      let folderPath = ((_a = this.file.parent) == null ? void 0 : _a.path) || "";
-      if (this.settings.coverSaveLocation === "subfolder") {
-        const subFolder = this.settings.coverSubfolder || "covers";
-        folderPath = folderPath ? `${folderPath}/${subFolder}` : subFolder;
-        if (!this.app.vault.getAbstractFileByPath(folderPath)) {
-          await this.app.vault.createFolder(folderPath);
-        }
-      }
-      const coverPath = folderPath ? `${folderPath}/${coverName}` : coverName;
-      const existing = this.app.vault.getAbstractFileByPath(coverPath);
-      if (existing instanceof import_obsidian2.TFile) {
-        await this.app.vault.modifyBinary(existing, buffer);
-      } else {
-        await this.app.vault.createBinary(coverPath, buffer);
-      }
-      new import_obsidian2.Notice(`\u5C01\u9762\u56FE\u5DF2\u4FDD\u5B58: ${coverPath}`);
-      this.close();
-    } catch (e) {
-      new import_obsidian2.Notice(`\u4FDD\u5B58\u5931\u8D25: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  }
-};
-
-// src/preview-modal.ts
-var import_obsidian3 = require("obsidian");
 
 // node_modules/marked/lib/marked.esm.js
 function _getDefaults() {
@@ -3196,7 +2842,161 @@ var MarkdownRenderer = class {
   }
 };
 
+// src/cover-modal.ts
+var CoverModal = class extends import_obsidian2.Modal {
+  constructor(app, settings, file, markdown) {
+    super(app);
+    this.currentBlob = null;
+    this.settings = settings;
+    this.file = file;
+    this.markdown = markdown;
+    this.generator = new CoverGenerator();
+    this.selectedStyle = settings.defaultCoverStyle;
+    this.selectedPalette = settings.defaultCoverPalette;
+    const renderer = new MarkdownRenderer(settings.defaultTheme, false);
+    this.customTitle = renderer.extractTitle(markdown) || file.basename;
+    this.subtitle = renderer.extractDescription(markdown);
+    this.author = renderer.extractAuthor(markdown) || settings.defaultAuthor;
+    this.tags = this.extractTags(markdown);
+  }
+  async onOpen() {
+    const { contentEl } = this;
+    contentEl.empty();
+    contentEl.addClass("mp-cover-modal");
+    contentEl.createEl("h2", { text: "\u751F\u6210\u4FE1\u606F\u5361\u5C01\u9762" });
+    contentEl.createEl("p", {
+      text: "\u57FA\u4E8E\u6587\u7AE0\u5185\u5BB9\u751F\u6210\u793E\u8BBA\u98CE\u683C\u4FE1\u606F\u5361\uFF082.35:1\uFF09",
+      cls: "mp-modal-desc"
+    });
+    new import_obsidian2.Setting(contentEl).setName("\u6807\u9898").addText(
+      (text) => text.setValue(this.customTitle).onChange((v) => {
+        this.customTitle = v;
+      })
+    );
+    new import_obsidian2.Setting(contentEl).setName("\u526F\u6807\u9898").addText(
+      (text) => text.setValue(this.subtitle).onChange((v) => {
+        this.subtitle = v;
+      })
+    );
+    new import_obsidian2.Setting(contentEl).setName("\u4F5C\u8005").addText(
+      (text) => text.setValue(this.author).onChange((v) => {
+        this.author = v;
+      })
+    );
+    new import_obsidian2.Setting(contentEl).setName("\u6807\u7B7E").setDesc("\u7528\u9017\u53F7\u5206\u9694").addText(
+      (text) => text.setValue(this.tags.join(", ")).onChange((v) => {
+        this.tags = v.split(",").map((s) => s.trim()).filter(Boolean);
+      })
+    );
+    new import_obsidian2.Setting(contentEl).setName("\u5361\u7247\u5E03\u5C40").addDropdown(
+      (d) => d.addOptions(COVER_STYLE_LABELS).setValue(this.selectedStyle).onChange((v) => {
+        this.selectedStyle = v;
+      })
+    );
+    new import_obsidian2.Setting(contentEl).setName("\u914D\u8272\u65B9\u6848").addDropdown(
+      (d) => d.addOptions(COVER_PALETTE_LABELS).setValue(this.selectedPalette).onChange((v) => {
+        this.selectedPalette = v;
+      })
+    );
+    const buttonRow = contentEl.createDiv({ cls: "mp-button-row" });
+    const previewBtn = buttonRow.createEl("button", { text: "\u9884\u89C8" });
+    previewBtn.addEventListener("click", () => this.generatePreview());
+    const saveBtn = buttonRow.createEl("button", { text: "\u751F\u6210\u5E76\u4FDD\u5B58", cls: "mod-cta" });
+    saveBtn.addEventListener("click", () => this.generateAndSave());
+    this.previewEl = contentEl.createDiv({ cls: "mp-cover-preview" });
+    await this.generatePreview();
+  }
+  onClose() {
+    this.contentEl.empty();
+  }
+  getOptions() {
+    return {
+      title: this.customTitle || "\u672A\u547D\u540D\u6587\u7AE0",
+      subtitle: this.subtitle || void 0,
+      author: this.author || void 0,
+      tags: this.tags.length > 0 ? this.tags : void 0,
+      style: this.selectedStyle,
+      palette: this.selectedPalette
+    };
+  }
+  async generatePreview() {
+    try {
+      const options2 = this.getOptions();
+      this.currentBlob = await this.generator.generate(options2);
+      this.previewEl.empty();
+      const canvas = this.generator.getCanvas();
+      const previewCanvas = this.previewEl.createEl("canvas");
+      previewCanvas.width = canvas.width;
+      previewCanvas.height = canvas.height;
+      previewCanvas.addClass("mp-cover-canvas");
+      const ctx = previewCanvas.getContext("2d");
+      if (ctx)
+        ctx.drawImage(canvas, 0, 0);
+      const info = this.previewEl.createDiv({ cls: "mp-cover-info" });
+      info.createEl("span", { text: `${canvas.width} \xD7 ${canvas.height} (2.35:1)` });
+    } catch (e) {
+      this.previewEl.empty();
+      this.previewEl.createEl("p", {
+        text: `\u751F\u6210\u5931\u8D25: ${e instanceof Error ? e.message : String(e)}`,
+        cls: "mp-error"
+      });
+    }
+  }
+  async generateAndSave() {
+    var _a;
+    if (!this.currentBlob) {
+      await this.generatePreview();
+    }
+    if (!this.currentBlob) {
+      new import_obsidian2.Notice("\u5C01\u9762\u56FE\u751F\u6210\u5931\u8D25");
+      return;
+    }
+    try {
+      const buffer = await this.currentBlob.arrayBuffer();
+      const coverName = this.file.basename + "-cover.png";
+      let folderPath = ((_a = this.file.parent) == null ? void 0 : _a.path) || "";
+      if (this.settings.coverSaveLocation === "subfolder") {
+        const subFolder = this.settings.coverSubfolder || "covers";
+        folderPath = folderPath ? `${folderPath}/${subFolder}` : subFolder;
+        if (!this.app.vault.getAbstractFileByPath(folderPath)) {
+          await this.app.vault.createFolder(folderPath);
+        }
+      }
+      const coverPath = folderPath ? `${folderPath}/${coverName}` : coverName;
+      const existing = this.app.vault.getAbstractFileByPath(coverPath);
+      if (existing instanceof import_obsidian2.TFile) {
+        await this.app.vault.modifyBinary(existing, buffer);
+      } else {
+        await this.app.vault.createBinary(coverPath, buffer);
+      }
+      new import_obsidian2.Notice(`\u5C01\u9762\u56FE\u5DF2\u4FDD\u5B58: ${coverPath}`);
+      this.close();
+    } catch (e) {
+      new import_obsidian2.Notice(`\u4FDD\u5B58\u5931\u8D25: ${e instanceof Error ? e.message : String(e)}`);
+    }
+  }
+  extractTags(markdown) {
+    const fm = markdown.match(/^---\s*\n([\s\S]*?)\n---/);
+    if (fm) {
+      const tagsMatch = fm[1].match(/^tags:\s*\[([^\]]*)\]/m);
+      if (tagsMatch) {
+        return tagsMatch[1].split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+      }
+      const tagsList = fm[1].match(/^tags:\s*\n((?:\s*-\s*.+\n?)*)/m);
+      if (tagsList) {
+        return tagsList[1].split("\n").map((s) => s.replace(/^\s*-\s*/, "").trim()).filter(Boolean);
+      }
+      const categories = fm[1].match(/^categor(?:y|ies):\s*(.+)$/m);
+      if (categories) {
+        return categories[1].split(",").map((s) => s.trim().replace(/^["'\[\]]+|["'\[\]]+$/g, "")).filter(Boolean);
+      }
+    }
+    return [];
+  }
+};
+
 // src/preview-modal.ts
+var import_obsidian3 = require("obsidian");
 var PreviewModal = class extends import_obsidian3.Modal {
   constructor(app, settings, markdown) {
     super(app);
@@ -3624,9 +3424,13 @@ var PublishModal = class extends import_obsidian5.Modal {
       coverData = await this.app.vault.readBinary(this.localCoverFile);
       coverFilename = this.localCoverFile.name;
     } else {
+      const renderer = new MarkdownRenderer(this.selectedTheme, false);
       const generator = new CoverGenerator();
       const blob = await generator.generate({
         title: this.articleTitle,
+        subtitle: this.articleDigest || void 0,
+        author: this.articleAuthor || void 0,
+        tags: this.extractTags(),
         style: this.coverStyle,
         palette: this.coverPalette
       });
@@ -3634,6 +3438,18 @@ var PublishModal = class extends import_obsidian5.Modal {
       coverFilename = "cover.png";
     }
     return await client.uploadMaterial(coverData, coverFilename);
+  }
+  extractTags() {
+    const fm = this.markdown.match(/^---\s*\n([\s\S]*?)\n---/);
+    if (fm) {
+      const tagsMatch = fm[1].match(/^tags:\s*\[([^\]]*)\]/m);
+      if (tagsMatch)
+        return tagsMatch[1].split(",").map((s) => s.trim().replace(/^["']|["']$/g, "")).filter(Boolean);
+      const tagsList = fm[1].match(/^tags:\s*\n((?:\s*-\s*.+\n?)*)/m);
+      if (tagsList)
+        return tagsList[1].split("\n").map((s) => s.replace(/^\s*-\s*/, "").trim()).filter(Boolean);
+    }
+    return [];
   }
   async uploadContentImages(html, client) {
     const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
@@ -3778,19 +3594,24 @@ var MPSidebarView = class extends import_obsidian6.ItemView {
     const content = await this.app.vault.read(file);
     return { file, content };
   }
+  buildCoverOptions(content, basename) {
+    const renderer = new MarkdownRenderer(this.selectedTheme, false);
+    return {
+      title: renderer.extractTitle(content) || basename,
+      subtitle: renderer.extractDescription(content) || void 0,
+      author: renderer.extractAuthor(content) || this.plugin.settings.defaultAuthor || void 0,
+      style: this.coverStyle,
+      palette: this.coverPalette
+    };
+  }
   async previewCover() {
     const result = await this.getContent();
     if (!result)
       return;
-    const renderer = new MarkdownRenderer(this.selectedTheme, false);
-    const title = renderer.extractTitle(result.content) || result.file.basename;
+    const options2 = this.buildCoverOptions(result.content, result.file.basename);
     const generator = new CoverGenerator();
     try {
-      await generator.generate({
-        title,
-        style: this.coverStyle,
-        palette: this.coverPalette
-      });
+      await generator.generate(options2);
       this.coverPreviewEl.empty();
       const canvas = generator.getCanvas();
       const previewCanvas = this.coverPreviewEl.createEl("canvas");
@@ -3809,15 +3630,10 @@ var MPSidebarView = class extends import_obsidian6.ItemView {
     const result = await this.getContent();
     if (!result)
       return;
-    const renderer = new MarkdownRenderer(this.selectedTheme, false);
-    const title = renderer.extractTitle(result.content) || result.file.basename;
+    const options2 = this.buildCoverOptions(result.content, result.file.basename);
     const generator = new CoverGenerator();
     try {
-      const blob = await generator.generate({
-        title,
-        style: this.coverStyle,
-        palette: this.coverPalette
-      });
+      const blob = await generator.generate(options2);
       const buffer = await blob.arrayBuffer();
       const coverName = result.file.basename + "-cover.png";
       let folderPath = ((_a = result.file.parent) == null ? void 0 : _a.path) || "";
@@ -3910,11 +3726,9 @@ var MPSidebarView = class extends import_obsidian6.ItemView {
       await client.getAccessToken();
       this.setStatus("\u6B63\u5728\u751F\u6210\u5C01\u9762\u56FE...");
       const generator = new CoverGenerator();
-      const coverBlob = await generator.generate({
-        title,
-        style: this.coverStyle,
-        palette: this.coverPalette
-      });
+      const coverBlob = await generator.generate(
+        this.buildCoverOptions(result.content, result.file.basename)
+      );
       const coverData = await coverBlob.arrayBuffer();
       this.setStatus("\u6B63\u5728\u4E0A\u4F20\u5C01\u9762...");
       const coverMediaId = await client.uploadMaterial(coverData, "cover.png");
@@ -4095,9 +3909,7 @@ var MPPublisherPlugin = class extends import_obsidian7.Plugin {
   }
   async generateCover(file) {
     const content = await this.app.vault.read(file);
-    const renderer = new MarkdownRenderer(this.settings.defaultTheme, false);
-    const title = renderer.extractTitle(content) || file.basename;
-    new CoverModal(this.app, this.settings, file, title).open();
+    new CoverModal(this.app, this.settings, file, content).open();
   }
   async previewArticle(file) {
     const content = await this.app.vault.read(file);
