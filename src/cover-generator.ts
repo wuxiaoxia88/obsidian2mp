@@ -406,25 +406,29 @@ export class CoverGenerator {
 		palette: PaletteColors,
 		style: CoverStyle,
 	) {
-		let fontSize = 72;
-		if (title.length > 15) fontSize = 64;
-		if (title.length > 25) fontSize = 52;
-		if (title.length > 35) fontSize = 44;
-		if (title.length > 50) fontSize = 38;
+		const baseFontSize = Math.round(h * 0.085);
+		let fontSize = baseFontSize;
+		const maxWidth = w * 0.72;
+		const maxLines = 3;
 
 		this.ctx.font = `bold ${fontSize}px ${FONT_FAMILY}`;
 		this.ctx.textAlign = 'center';
 		this.ctx.textBaseline = 'middle';
 
-		const maxWidth = w * 0.72;
-		const lines = this.wrapText(title, maxWidth);
-		const lineHeight = fontSize * 1.5;
+		let lines = this.wrapText(title, maxWidth);
+		while (lines.length > maxLines && fontSize > Math.round(h * 0.04)) {
+			fontSize -= 2;
+			this.ctx.font = `bold ${fontSize}px ${FONT_FAMILY}`;
+			lines = this.wrapText(title, maxWidth);
+		}
+
+		const lineHeight = fontSize * 1.45;
 		const totalTextHeight = lines.length * lineHeight;
 		const subtitleOffset = subtitle ? fontSize * 0.8 : 0;
 		const startY = (h - totalTextHeight - subtitleOffset) / 2 + fontSize / 2;
 
 		if (style !== 'minimal') {
-			const padding = 40;
+			const padding = Math.round(h * 0.045);
 			const bgWidth = maxWidth + padding * 2;
 			const bgHeight = totalTextHeight + subtitleOffset + padding * 2;
 			const bgX = (w - bgWidth) / 2;
@@ -436,9 +440,9 @@ export class CoverGenerator {
 		}
 
 		this.ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-		this.ctx.shadowBlur = 24;
+		this.ctx.shadowBlur = Math.round(h * 0.03);
 		this.ctx.shadowOffsetX = 0;
-		this.ctx.shadowOffsetY = 4;
+		this.ctx.shadowOffsetY = Math.round(h * 0.005);
 		this.ctx.fillStyle = palette.text;
 
 		lines.forEach((line, i) => {
@@ -449,7 +453,7 @@ export class CoverGenerator {
 		this.ctx.shadowBlur = 0;
 
 		if (subtitle) {
-			const subFontSize = fontSize * 0.38;
+			const subFontSize = Math.round(fontSize * 0.38);
 			this.ctx.font = `${subFontSize}px ${FONT_FAMILY}`;
 			this.ctx.fillStyle = this.hexToRgba(palette.text, 0.7);
 			this.ctx.fillText(subtitle, w / 2, startY + totalTextHeight + subFontSize * 0.5);
