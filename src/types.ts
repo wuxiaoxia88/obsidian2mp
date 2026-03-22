@@ -1,14 +1,26 @@
-export type CoverStyle = 'gradient' | 'geometric' | 'minimal' | 'wave' | 'dots' | 'blocks';
-export type CoverPalette = 'warm' | 'cool' | 'dark' | 'elegant' | 'vivid' | 'mono' | 'nature' | 'sunset';
+export type CoverStyle = 'editorial' | 'magazine' | 'minimal' | 'panel';
+export type CoverPalette = 'classic' | 'warm' | 'cool' | 'dark' | 'nature' | 'vivid';
 export type ArticleTheme = 'default' | 'elegant' | 'modern' | 'simple';
 
 export interface CoverOptions {
 	title: string;
 	subtitle?: string;
+	author?: string;
+	tags?: string[];
 	style: CoverStyle;
 	palette: CoverPalette;
 	width?: number;
 	height?: number;
+}
+
+export interface CardPaletteColors {
+	paper: string;
+	paperDeep: string;
+	ink: string;
+	muted: string;
+	accent: string;
+	tint: string;
+	line: string;
 }
 
 export interface PaletteColors {
@@ -70,23 +82,19 @@ export interface WeChatDraftResult {
 }
 
 export const COVER_STYLE_LABELS: Record<CoverStyle, string> = {
-	gradient: '渐变流光',
-	geometric: '几何图形',
-	minimal: '极简风格',
-	wave: '流动波浪',
-	dots: '圆点图案',
-	blocks: '色块拼接',
+	editorial: '社论风格',
+	magazine: '杂志排版',
+	minimal: '大字极简',
+	panel: '面板布局',
 };
 
 export const COVER_PALETTE_LABELS: Record<CoverPalette, string> = {
+	classic: '经典纸色',
 	warm: '暖色调',
 	cool: '冷色调',
-	dark: '暗色调',
-	elegant: '典雅',
-	vivid: '鲜艳',
-	mono: '黑白',
-	nature: '自然',
-	sunset: '日落',
+	dark: '暗色风格',
+	nature: '自然绿',
+	vivid: '活力红',
 };
 
 export const ARTICLE_THEME_LABELS: Record<ArticleTheme, string> = {
