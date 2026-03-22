@@ -20,9 +20,15 @@ export interface PaletteColors {
 	gradientStops: string[];
 }
 
+export interface WeChatAccount {
+	name: string;
+	appId: string;
+	appSecret: string;
+}
+
 export interface PluginSettings {
-	wechatAppId: string;
-	wechatAppSecret: string;
+	wechatAccounts: WeChatAccount[];
+	activeAccountIndex: number;
 	defaultAuthor: string;
 	defaultTheme: ArticleTheme;
 	defaultCoverStyle: CoverStyle;
@@ -89,3 +95,5 @@ export const ARTICLE_THEME_LABELS: Record<ArticleTheme, string> = {
 	modern: '现代',
 	simple: '简约',
 };
+
+export const GITHUB_REPO = 'wuxiaoxia88/obsidian2mp';

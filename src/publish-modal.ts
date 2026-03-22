@@ -2,6 +2,7 @@ import { App, Modal, Notice, Setting, TFile } from 'obsidian';
 import { MarkdownRenderer } from './markdown-renderer';
 import { CoverGenerator } from './cover-generator';
 import { WeChatClient } from './wechat-client';
+import { getActiveAccount } from './settings';
 import {
 	PluginSettings,
 	ArticleTheme,
@@ -27,6 +28,7 @@ export class PublishModal extends Modal {
 	private coverPalette: CoverPalette;
 	private coverSource: 'generate' | 'local' = 'generate';
 	private localCoverFile: TFile | null = null;
+	private selectedAccountIndex: number;
 
 	private statusEl: HTMLDivElement;
 	private previewEl: HTMLDivElement;
@@ -51,6 +53,7 @@ export class PublishModal extends Modal {
 		this.selectedTheme = settings.defaultTheme;
 		this.coverStyle = settings.defaultCoverStyle;
 		this.coverPalette = settings.defaultCoverPalette;
+		this.selectedAccountIndex = settings.activeAccountIndex;
 	}
 
 	onOpen() {
@@ -61,6 +64,25 @@ export class PublishModal extends Modal {
 		contentEl.createEl('h2', { text: '发布到微信公众号' });
 
 		const form = contentEl.createDiv({ cls: 'mp-publish-form' });
+
+		const accounts = this.settings.wechatAccounts;
+		if (accounts.length > 1) {
+			const accountOptions: Record<string, string> = {};
+			accounts.forEach((acc, i) => {
+				accountOptions[String(i)] = acc.name || `账号 ${i + 1}`;
+			});
+
+			new Setting(form)
+				.setName('选择公众号')
+				.addDropdown((dropdown) =>
+					dropdown
+						.addOptions(accountOptions)
+						.setValue(String(this.selectedAccountIndex >= 0 ? this.selectedAccountIndex : 0))
+						.onChange((value) => {
+							this.selectedAccountIndex = parseInt(value);
+						})
+				);
+		}
 
 		new Setting(form)
 			.setName('文章标题')
@@ -178,25 +200,14 @@ export class PublishModal extends Modal {
 						.onChange((value) => { this.coverPalette = value as CoverPalette; })
 				);
 		} else {
-			const localSetting = new Setting(this.coverOptionsEl)
-				.setName('选择封面图片')
-				.setDesc('从 Vault 中选择一张图片');
-
-			const fileInput = localSetting.controlEl.createEl('input', { type: 'file' });
-			fileInput.accept = 'image/*';
-			fileInput.addEventListener('change', () => {
-				if (fileInput.files && fileInput.files.length > 0) {
-					new Notice(`已选择: ${fileInput.files[0].name}`);
-				}
-			});
-
 			const imageFiles = this.app.vault.getFiles().filter(f =>
 				/\.(png|jpg|jpeg|gif|webp|bmp)$/i.test(f.extension)
 			);
 
 			if (imageFiles.length > 0) {
 				new Setting(this.coverOptionsEl)
-					.setName('或从 Vault 选择')
+					.setName('选择封面图片')
+					.setDesc('从 Vault 中选择一张图片')
 					.addDropdown((dropdown) => {
 						dropdown.addOption('', '请选择图片...');
 						for (const img of imageFiles.slice(0, 100)) {
@@ -235,22 +246,23 @@ export class PublishModal extends Modal {
 	}
 
 	private async publish() {
-		if (!this.settings.wechatAppId || !this.settings.wechatAppSecret) {
-			this.setStatus('请先在插件设置中配置 AppID 和 AppSecret', true);
+		const accounts = this.settings.wechatAccounts;
+		const accountIndex = this.selectedAccountIndex >= 0 ? this.selectedAccountIndex : 0;
+		const account = accounts[accountIndex];
+
+		if (!account || !account.appId || !account.appSecret) {
+			this.setStatus('请先在插件设置中配置公众号 AppID 和 AppSecret', true);
 			return;
 		}
 
-		this.wechatClient.updateCredentials(
-			this.settings.wechatAppId,
-			this.settings.wechatAppSecret
-		);
+		const client = new WeChatClient(account.appId, account.appSecret);
 
 		try {
 			this.setStatus('正在获取 access_token...');
-			await this.wechatClient.getAccessToken();
+			await client.getAccessToken();
 
 			this.setStatus('正在准备封面图...');
-			const coverMediaId = await this.prepareCover();
+			const coverMediaId = await this.prepareCover(client);
 
 			this.setStatus('正在渲染文章...');
 			const renderer = new MarkdownRenderer(
@@ -260,7 +272,7 @@ export class PublishModal extends Modal {
 			let html = renderer.render(this.markdown);
 
 			this.setStatus('正在上传文章图片...');
-			html = await this.uploadContentImages(html);
+			html = await this.uploadContentImages(html, client);
 
 			this.setStatus('正在创建草稿...');
 			const article: WeChatDraftArticle = {
@@ -273,9 +285,9 @@ export class PublishModal extends Modal {
 				only_fans_can_comment: 0,
 			};
 
-			const mediaId = await this.wechatClient.addDraft([article]);
+			const mediaId = await client.addDraft([article]);
 			this.setStatus(`草稿创建成功！(media_id: ${mediaId})`);
-			new Notice('文章已发送到公众号草稿箱！');
+			new Notice(`文章已发送到「${account.name || '公众号'}」草稿箱！`);
 		} catch (e) {
 			const errMsg = e instanceof Error ? e.message : String(e);
 			this.setStatus(`发布失败: ${errMsg}`, true);
@@ -283,7 +295,7 @@ export class PublishModal extends Modal {
 		}
 	}
 
-	private async prepareCover(): Promise<string> {
+	private async prepareCover(client: WeChatClient): Promise<string> {
 		let coverData: ArrayBuffer;
 		let coverFilename: string;
 
@@ -301,27 +313,23 @@ export class PublishModal extends Modal {
 			coverFilename = 'cover.png';
 		}
 
-		return await this.wechatClient.uploadMaterial(coverData, coverFilename);
+		return await client.uploadMaterial(coverData, coverFilename);
 	}
 
-	private async uploadContentImages(html: string): Promise<string> {
+	private async uploadContentImages(html: string, client: WeChatClient): Promise<string> {
 		const imgRegex = /<img[^>]+src="([^"]+)"[^>]*>/g;
 		let match;
 		const replacements: { original: string; newUrl: string }[] = [];
 
 		while ((match = imgRegex.exec(html)) !== null) {
 			const src = match[1];
-
-			if (src.startsWith('http://') || src.startsWith('https://')) {
-				if (src.includes('mmbiz.qpic.cn')) continue;
-				continue;
-			}
+			if (src.startsWith('http://') || src.startsWith('https://')) continue;
 
 			try {
 				const file = this.app.vault.getAbstractFileByPath(src);
 				if (file instanceof TFile) {
 					const data = await this.app.vault.readBinary(file);
-					const wxUrl = await this.wechatClient.uploadImage(data, file.name);
+					const wxUrl = await client.uploadImage(data, file.name);
 					replacements.push({ original: src, newUrl: wxUrl });
 				}
 			} catch (e) {

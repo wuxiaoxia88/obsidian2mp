@@ -55,7 +55,7 @@ const THEMES: Record<ArticleTheme, ThemeStyleSet> = {
 		blockquoteP: 'margin: 0; line-height: 1.75;',
 		code: 'font-family: "Fira Code", Menlo, Monaco, Consolas, monospace; background-color: #fff5f5; color: #ff502c; font-size: 14px; padding: 2px 6px; border-radius: 3px;',
 		pre: 'margin: 16px 0; padding: 16px; background-color: #282c34; border-radius: 8px; overflow-x: auto;',
-		preCode: 'font-family: "Fira Code", Menlo, Monaco, Consolas, monospace; font-size: 14px; color: #abb2bf; line-height: 1.6; display: block; white-space: pre-wrap; word-break: break-all;',
+		preCode: 'font-family: "Fira Code", Menlo, Monaco, Consolas, monospace; font-size: 14px; color: #abb2bf; background: none; line-height: 1.6; display: block; white-space: pre-wrap; word-break: break-all;',
 		img: 'max-width: 100%; height: auto; display: block; margin: 16px auto; border-radius: 8px;',
 		table: 'width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;',
 		thead: 'background-color: #0F4C81; color: #FFFFFF;',
@@ -89,7 +89,7 @@ const THEMES: Record<ArticleTheme, ThemeStyleSet> = {
 		blockquoteP: 'margin: 0; line-height: 1.8; text-indent: 0;',
 		code: 'font-family: Menlo, Monaco, Consolas, monospace; background-color: #FDF5E6; color: #8B4513; font-size: 14px; padding: 2px 6px; border-radius: 3px;',
 		pre: 'margin: 18px 0; padding: 18px; background-color: #2D2B2B; border-radius: 8px; overflow-x: auto; border: 1px solid #D2B48C;',
-		preCode: 'font-family: Menlo, Monaco, Consolas, monospace; font-size: 14px; color: #D4C4A8; line-height: 1.6; display: block; white-space: pre-wrap; word-break: break-all;',
+		preCode: 'font-family: Menlo, Monaco, Consolas, monospace; font-size: 14px; color: #D4C4A8; background: none; line-height: 1.6; display: block; white-space: pre-wrap; word-break: break-all;',
 		img: 'max-width: 100%; height: auto; display: block; margin: 20px auto; border-radius: 8px; box-shadow: 0 2px 12px rgba(139,69,19,0.1);',
 		table: 'width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px;',
 		thead: 'background-color: #8B4513; color: #FFFFFF;',
@@ -123,7 +123,7 @@ const THEMES: Record<ArticleTheme, ThemeStyleSet> = {
 		blockquoteP: 'margin: 0; line-height: 1.75;',
 		code: 'font-family: "SF Mono", "Fira Code", Menlo, monospace; background-color: #f0f0f5; color: #667eea; font-size: 14px; padding: 2px 8px; border-radius: 4px; font-weight: 500;',
 		pre: 'margin: 16px 0; padding: 20px; background-color: #1e1e2e; border-radius: 12px; overflow-x: auto;',
-		preCode: 'font-family: "SF Mono", "Fira Code", Menlo, monospace; font-size: 14px; color: #cdd6f4; line-height: 1.6; display: block; white-space: pre-wrap; word-break: break-all; font-weight: normal;',
+		preCode: 'font-family: "SF Mono", "Fira Code", Menlo, monospace; font-size: 14px; color: #cdd6f4; background: none; line-height: 1.6; display: block; white-space: pre-wrap; word-break: break-all; font-weight: normal;',
 		img: 'max-width: 100%; height: auto; display: block; margin: 20px auto; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);',
 		table: 'width: 100%; border-collapse: separate; border-spacing: 0; margin: 16px 0; font-size: 14px; border-radius: 8px; overflow: hidden; border: 1px solid #e0e0e0;',
 		thead: 'background: linear-gradient(135deg, #667eea, #764ba2); color: #FFFFFF;',
@@ -157,7 +157,7 @@ const THEMES: Record<ArticleTheme, ThemeStyleSet> = {
 		blockquoteP: 'margin: 0; line-height: 1.75;',
 		code: 'font-family: Menlo, Monaco, monospace; background-color: #f5f5f5; color: #333; font-size: 13px; padding: 2px 5px; border-radius: 3px;',
 		pre: 'margin: 16px 0; padding: 16px; background-color: #f5f5f5; border-radius: 6px; overflow-x: auto; border: 1px solid #eee;',
-		preCode: 'font-family: Menlo, Monaco, monospace; font-size: 13px; color: #333; line-height: 1.6; display: block; white-space: pre-wrap; word-break: break-all;',
+		preCode: 'font-family: Menlo, Monaco, monospace; font-size: 13px; color: #333; background: none; line-height: 1.6; display: block; white-space: pre-wrap; word-break: break-all;',
 		img: 'max-width: 100%; height: auto; display: block; margin: 16px auto;',
 		table: 'width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px;',
 		thead: 'background-color: #f5f5f5;',
@@ -187,21 +187,38 @@ export class MarkdownRenderer {
 	private links: LinkRef[] = [];
 	private linkCounter = 0;
 	private tableRowCounter = 0;
+	private firstHeadingStripped = false;
+	private titleToStrip = '';
 
 	constructor(theme: ArticleTheme, convertLinks: boolean) {
 		this.theme = theme;
 		this.convertLinks = convertLinks;
 	}
 
-	render(markdown: string): string {
+	render(markdown: string, stripTitle = true): string {
 		this.links = [];
 		this.linkCounter = 0;
+		this.firstHeadingStripped = false;
+		this.titleToStrip = '';
+
+		if (stripTitle) {
+			this.titleToStrip = this.extractTitle(markdown);
+		}
+
+		let content = this.stripFrontmatter(markdown);
 
 		const styles = THEMES[this.theme];
 
 		const renderer = new marked.Renderer();
 
 		renderer.heading = (text: string, level: number): string => {
+			if (!this.firstHeadingStripped && this.titleToStrip && (level === 1 || level === 2)) {
+				const plainText = text.replace(/<[^>]+>/g, '').trim();
+				if (plainText === this.titleToStrip) {
+					this.firstHeadingStripped = true;
+					return '';
+				}
+			}
 			const key = `h${level}` as keyof ThemeStyleSet;
 			const style = styles[key] || styles.h4;
 			return `<h${level} style="${style}">${text}</h${level}>\n`;
@@ -247,8 +264,8 @@ export class MarkdownRenderer {
 
 		renderer.code = (code: string, language: string | undefined): string => {
 			const escapedCode = this.escapeHtml(code);
-			const langLabel = language ? `<span style="color: #888; font-size: 12px; float: right;">${language}</span>` : '';
-			return `<pre style="${styles.pre}">${langLabel}<code style="${styles.preCode}">${escapedCode}</code></pre>\n`;
+			const langLabel = language ? `<span style="color: #999; font-size: 12px; float: right; background: transparent;">${language}</span>` : '';
+			return `<pre style="${styles.pre}">${langLabel}<section style="${styles.preCode}">${escapedCode}</section></pre>\n`;
 		};
 
 		renderer.codespan = (code: string): string => {
@@ -270,7 +287,11 @@ export class MarkdownRenderer {
 		};
 
 		renderer.listitem = (text: string): string => {
-			return `<li style="${styles.li}">${text}</li>\n`;
+			const cleaned = text
+				.replace(/<p style="[^"]*">/g, '')
+				.replace(/<\/p>\s*/g, '')
+				.trim();
+			return `<li style="${styles.li}">${cleaned}</li>\n`;
 		};
 
 		renderer.table = (header: string, body: string): string => {
@@ -303,10 +324,10 @@ export class MarkdownRenderer {
 		marked.setOptions({
 			renderer: renderer,
 			gfm: true,
-			breaks: true,
+			breaks: false,
 		});
 
-		let html = marked.parse(markdown) as string;
+		let html = marked.parse(content) as string;
 
 		if (this.convertLinks && this.links.length > 0) {
 			html += this.renderFootnotes(styles);

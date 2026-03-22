@@ -1,11 +1,12 @@
-import { Plugin, TFile, Notice, MarkdownView } from 'obsidian';
-import { PluginSettings } from './types';
-import { DEFAULT_SETTINGS, MPPublisherSettingTab } from './settings';
+import { Plugin, TFile, Notice, MarkdownView, WorkspaceLeaf } from 'obsidian';
+import { PluginSettings, WeChatAccount } from './types';
+import { DEFAULT_SETTINGS, MPPublisherSettingTab, getActiveAccount } from './settings';
 import { CoverModal } from './cover-modal';
 import { PreviewModal } from './preview-modal';
 import { PublishModal } from './publish-modal';
 import { MarkdownRenderer } from './markdown-renderer';
 import { WeChatClient } from './wechat-client';
+import { MPSidebarView, VIEW_TYPE_MP_SIDEBAR } from './sidebar-view';
 
 export default class MPPublisherPlugin extends Plugin {
 	settings: PluginSettings;
@@ -14,13 +15,27 @@ export default class MPPublisherPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
+		const account = getActiveAccount(this.settings);
 		this.wechatClient = new WeChatClient(
-			this.settings.wechatAppId,
-			this.settings.wechatAppSecret
+			account?.appId || '',
+			account?.appSecret || ''
+		);
+
+		this.registerView(
+			VIEW_TYPE_MP_SIDEBAR,
+			(leaf) => new MPSidebarView(leaf, this)
 		);
 
 		this.addRibbonIcon('upload-cloud', 'MP Publisher', () => {
-			this.publishCurrentFile();
+			this.activateSidebar();
+		});
+
+		this.addCommand({
+			id: 'open-sidebar',
+			name: '打开侧边栏',
+			callback: () => {
+				this.activateSidebar();
+			},
 		});
 
 		this.addCommand({
@@ -78,18 +93,53 @@ export default class MPPublisherPlugin extends Plugin {
 		this.addSettingTab(new MPPublisherSettingTab(this.app, this));
 	}
 
-	onunload() {}
+	onunload() {
+		this.app.workspace.detachLeavesOfType(VIEW_TYPE_MP_SIDEBAR);
+	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const loaded = await this.loadData();
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, loaded);
+
+		if (loaded && !loaded.wechatAccounts && (loaded.wechatAppId || loaded.wechatAppSecret)) {
+			this.settings.wechatAccounts = [{
+				name: '默认公众号',
+				appId: loaded.wechatAppId || '',
+				appSecret: loaded.wechatAppSecret || '',
+			}];
+			this.settings.activeAccountIndex = 0;
+			await this.saveData(this.settings);
+		}
 	}
 
 	async saveSettings() {
 		await this.saveData(this.settings);
+		const account = getActiveAccount(this.settings);
 		this.wechatClient?.updateCredentials(
-			this.settings.wechatAppId,
-			this.settings.wechatAppSecret
+			account?.appId || '',
+			account?.appSecret || ''
 		);
+	}
+
+	async activateSidebar() {
+		const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE_MP_SIDEBAR);
+		if (existing.length) {
+			this.app.workspace.revealLeaf(existing[0]);
+			const view = existing[0].view;
+			if (view instanceof MPSidebarView) {
+				view.renderPanel();
+			}
+			return;
+		}
+
+		const leaf = this.app.workspace.getRightLeaf(false);
+		if (leaf) {
+			await leaf.setViewState({
+				type: VIEW_TYPE_MP_SIDEBAR,
+				active: true,
+			});
+			this.app.workspace.revealLeaf(leaf);
+		}
 	}
 
 	private getActiveMarkdownFile(): TFile | null {
